@@ -156,7 +156,8 @@ export default function AttachmentGrid({
                   src={cachedUrls[item.url] || item.thumbnail!}
                   alt="refresh"
                   loading="lazy"
-                  fill
+                  width={10}
+                  height={10}
                   className="w-full h-full object-cover object-center rounded-lg"
                 />
               </div>

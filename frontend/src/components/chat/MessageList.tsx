@@ -58,7 +58,7 @@ export default function MessageList() {
           key={`selectedMessage/date/${date}`}
           className="flex flex-col gap-1 w-full"
         >
-          <small className="bg-bgsec self-center sticky top-2 px-3 py-0.5 my-2 rounded-full">
+          <small className="bg-bgsec self-center sticky top-2 px-3 py-0.5 z-10 my-2 rounded-full">
             {formatRelativeDate(date)}
           </small>
 
@@ -67,7 +67,8 @@ export default function MessageList() {
             const attachmentLength = attachment?.length;
             return (
               <div
-                key={item._id}
+                key={`message/${item._id}`}
+                id={`message/${item._id}`}
                 className={` rounded-md flex flex-col flex-nowrap items-center overflow-hidden max-w-8/10 ${
                   item.sender_id === userID
                     ? "self-end bg-[color-mix(in_srgb,var(--color-bgpri)_50%,var(--color-pri)_50%)]"
@@ -113,7 +114,7 @@ export default function MessageList() {
         </div>
       ))}
 
-      <div id="scrollToMessage" />
+      <div id="scrollToMessage"></div>
     </section>
   );
 }

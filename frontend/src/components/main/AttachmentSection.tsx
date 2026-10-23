@@ -46,7 +46,7 @@ export default function AttachmentSection({
               <EllipsisVertical size={24} color="white" strokeWidth={1} />
             </div>
           </div>
-          <div className="flex grow items-center justify-center overflow-hidden">
+          <div className="flex grow w-full items-center justify-center overflow-hidden">
             {files[selectedFiles] ? (
               <FilePreview
                 item={{
@@ -180,7 +180,7 @@ const FilePreviewBox = ({
       setProgress(100);
       return;
     }
-    if (fileStatus === "start") {
+    if (fileStatus === "start" || fileStatus === "loading") {
       setProgress((prev) => (prev >= 80 ? 0 : prev));
       const progressing = setInterval(() => {
         setProgress((prev) => {
@@ -189,7 +189,7 @@ const FilePreviewBox = ({
           }
           return prev + 5;
         });
-      }, 1000);
+      }, 600);
       return () => clearInterval(progressing);
     }
   }, [activeTransferFiles]);

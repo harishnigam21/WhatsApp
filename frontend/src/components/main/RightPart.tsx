@@ -241,11 +241,13 @@ export default function RightPart({
   }, []);
   useEffect(() => {
     const container = MessageAreaRef.current;
+    const item = selectedContact?.messages.slice(-1);
+    const id = item ? `message/${item[0]?._id}` : "scrollToMessage";
     if (!container) return;
     let frameId = 0;
     let retryFrame = 0;
     const tryScroll = () => {
-      const success = scrollToSection("scrollToMessage", MessageAreaRef);
+      const success = scrollToSection(id, MessageAreaRef);
       if (!success) {
         retryFrame = requestAnimationFrame(tryScroll);
       }
@@ -255,7 +257,7 @@ export default function RightPart({
       cancelAnimationFrame(frameId);
       cancelAnimationFrame(retryFrame);
     };
-  }, [selectedContact?._id, selectedContact?.messages, children]);
+  }, [selectedContact]);
 
   useEffect(() => {
     if (input.trim().length > 0) {
