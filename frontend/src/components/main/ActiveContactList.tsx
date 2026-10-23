@@ -1,12 +1,7 @@
 import { ActiveContact } from "@/redux/slices/ChatSlice";
 import { User } from "@/redux/slices/UserSlice";
 import { shortTimestamp } from "@/utils/dateFormats";
-import {
-  Check,
-  CheckCheck,
-  ChevronDown,
-  Paperclip,
-} from "lucide-react";
+import { Check, CheckCheck, ChevronDown, Paperclip } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -57,7 +52,9 @@ export default function ActiveContactList({
           )}
         </div>
         <div className="flex flex-col justify-center grow">
-          <p className="break-all line-clamp-1">{item._id == user?._id ? "You" : item.name}</p>
+          <p className="break-all line-clamp-1">
+            {item._id == user?._id ? "You" : item.name}
+          </p>
           <div className="flex flex-nowrap items-center gap-1">
             {item.lastMessage.sender_id == user?._id && (
               <div>
@@ -72,10 +69,14 @@ export default function ActiveContactList({
             )}
             <small className="text-txpri/75 break-all line-clamp-1 flex items-center">
               {item.lastMessage.attachments &&
-                item.lastMessage.attachments.length > 0 && (
-                  <Paperclip size={16} className="mt-1" />
-                )}
-              {item.lastMessage.content}
+              item.lastMessage.attachments.length >= 1 ? (
+                <div className="mt-1 pr-1 flex flex-nowrap items-center gap-1">
+                  <Paperclip size={16} />
+                  <span>Attachments</span>
+                </div>
+              ) : (
+                <span>{item.lastMessage.content}</span>
+              )}
             </small>
           </div>
         </div>

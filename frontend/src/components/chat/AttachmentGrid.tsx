@@ -73,8 +73,13 @@ export default function AttachmentGrid({
   };
   useEffect(() => {
     const maxSize = (sectionWidth * (50 / 100)) / 2;
-    setABS(maxSize > 150 ? 150 : maxSize);
-  }, [sectionWidth]);
+    if (attachment.length == 1) {
+      const te = sectionWidth * (50 / 100);
+      setABS(te > 300 ? 300 : te);
+    } else {
+      setABS(maxSize > 150 ? 150 : maxSize);
+    }
+  }, [sectionWidth, attachment]);
   useEffect(() => {
     let isMounted = true;
     const urlsToCleanup: string[] = [];
@@ -141,6 +146,7 @@ export default function AttachmentGrid({
                         type: item.type,
                         thumbnail: item.thumbnail,
                         size: item.size,
+                        message: item.message,
                       },
                     ]);
                   }
@@ -171,6 +177,7 @@ export default function AttachmentGrid({
                           type: item.type,
                           thumbnail: item.thumbnail,
                           size: item.size,
+                          message: item.message,
                         },
                       ]);
                     }
@@ -194,6 +201,7 @@ export default function AttachmentGrid({
                       type: item.type,
                       thumbnail: item.thumbnail,
                       size: item.size,
+                      message: item.message,
                     });
                   }
                   return acc;
@@ -225,7 +233,7 @@ export default function AttachmentGrid({
         </div>
       )}
       {selectedFile && (
-        <div className="w-screen h-screen fixed top-0 left-0 z-10 flex items-center-safe justify-center-safe">
+        <div className="w-screen h-screen fixed top-0 left-0 z-50 flex items-center-safe justify-center-safe">
           <AttachmentPreview
             selectedFile={selectedFile}
             setSelectedFile={setSelectedFile}

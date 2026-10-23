@@ -1,9 +1,10 @@
 import Image from "next/image";
 import { renderFileIcon } from "./RightPart";
-import { LoaderCircle, Plus, X } from "lucide-react";
+import { EllipsisVertical, LoaderCircle, Plus, X } from "lucide-react";
 import { IoSendSharp } from "react-icons/io5";
 import { useEffect, useState } from "react";
 import { formatBytes } from "@/utils/formatBytes";
+import { FilePreview } from "../chat/AttachmentPreview";
 
 export default function AttachmentSection({
   files,
@@ -17,43 +18,45 @@ export default function AttachmentSection({
     React.SetStateAction<{ file: File; URL: string; message: string }[]>
   >;
   loading: boolean;
-  activeTransferFiles: Map<string, "start" | "loading" | "stop" | "error">;
+  activeTransferFiles: Record<string, "start" | "loading" | "stop" | "error">;
   handleSendMessage: () => void;
 }) {
   const [selectedFiles, setSelectedFiles] = useState<number>(0);
 
   return (
     <div className="absolute top-0 left-0 w-full h-full pt-15">
-      <div className="relative bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)] w-full h-full border-t border-borderhl/30 flex flex-col">
-        <div className="grow flex flex-col items-center justify-center gap-2">
-          <p className="my-4 font-medium text-sm">
-            {files[selectedFiles]?.file.name}
-          </p>
-          <div className="grow flex items-center justify-center">
+      <div className="relative bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)] w-full h-full border-t border-borderhl/30 flex flex-col justify-between">
+        <div className="flex grow flex-col items-center justify-between gap-2 overflow-hidden">
+          <div className="flex flex-nowrap justify-between gap-4 items-center w-full px-1 sm:px-3">
+            <div
+              className="cursor-pointer"
+              onClick={() => {
+                if (!loading) {
+                  files.forEach((item) => URL.revokeObjectURL(item.URL));
+                  setFiles([]);
+                }
+              }}
+            >
+              <X size={24} color="white" strokeWidth={1} />
+            </div>
+            <p className="my-4 font-medium text-sm break-all line-clamp-1 p-1 grow text-center">
+              {files[selectedFiles]?.file.name}
+            </p>
+            <div className="cursor-pointer">
+              <EllipsisVertical size={24} color="white" strokeWidth={1} />
+            </div>
+          </div>
+          <div className="flex grow items-center justify-center overflow-hidden">
             {files[selectedFiles] ? (
-              files[selectedFiles]?.file.type.startsWith("image/") ? (
-                <Image
-                  src={files[selectedFiles].URL}
-                  alt="selected file"
-                  width={10}
-                  height={10}
-                  className="w-fit max-w-50 max-h-50 object-contain object-center"
-                />
-              ) : (
-                <div className="flex flex-col justify-center items-center gap-1 bg-[#111b21] rounded-xl p-4 w-100 h-60 overflow-hidden">
-                  {renderFileIcon(files[selectedFiles].file, 20)}
-                  <p className="text-xl mt-6 font-medium text-white/80 text-center">
-                    No preview available
-                  </p>
-                  <p className="text-white/80 whitespace-nowrap">
-                    <span>{formatBytes(files[selectedFiles].file.size)}</span>
-                    <span className="mx-2">-</span>
-                    <span className="uppercase">
-                      {files[selectedFiles]?.file.name.split(".").slice(-1)}
-                    </span>
-                  </p>
-                </div>
-              )
+              <FilePreview
+                item={{
+                  name: files[selectedFiles].file.name,
+                  type: files[selectedFiles].file.type,
+                  blobUrl: files[selectedFiles].URL,
+                  thumbnail: files[selectedFiles].URL,
+                  size: files[selectedFiles].file.size,
+                }}
+              />
             ) : (
               <strong className="text-red-500 text-sm">
                 No file selected !
@@ -107,6 +110,7 @@ export default function AttachmentSection({
               name="addmore"
               id="addmore"
               className="hidden"
+              multiple
               onChange={(e) => {
                 const cfiles = e.target.files;
                 if (cfiles && cfiles.length > 0) {
@@ -141,18 +145,6 @@ export default function AttachmentSection({
             </div>
           </button>
         </div>
-        <X
-          size={24}
-          color="white"
-          strokeWidth={1}
-          className="absolute top-4 left-4 cursor-pointer"
-          onClick={() => {
-            if (!loading) {
-              files.forEach((item) => URL.revokeObjectURL(item.URL));
-              setFiles([]);
-            }
-          }}
-        />
       </div>
     </div>
   );
@@ -175,11 +167,11 @@ const FilePreviewBox = ({
     React.SetStateAction<{ file: File; URL: string; message: string }[]>
   >;
   selectedFiles: number;
-  activeTransferFiles: Map<string, "start" | "loading" | "stop" | "error">;
+  activeTransferFiles: Record<string, "start" | "loading" | "stop" | "error">;
 }) => {
   const [progress, setProgress] = useState<number>(0);
   useEffect(() => {
-    const fileStatus = activeTransferFiles.get(item.URL);
+    const fileStatus = activeTransferFiles[item.URL];
     if (!fileStatus) {
       setProgress(0);
       return;

@@ -58,7 +58,7 @@ export default function MessageList() {
           key={`selectedMessage/date/${date}`}
           className="flex flex-col gap-1 w-full"
         >
-          <small className="bg-bgsec self-center sticky top-2 px-3 py-0.5 rounded-full">
+          <small className="bg-bgsec self-center sticky top-2 px-3 py-0.5 my-2 rounded-full">
             {formatRelativeDate(date)}
           </small>
 
@@ -84,7 +84,7 @@ export default function MessageList() {
                 <div className="flex flex-nowrap w-full py-0.5 px-1.5">
                   {!attachment ||
                     (attachment.length <= 1 && (
-                      <p className="text-base pb-1 whitespace-pre-wrap">
+                      <p className="text-xs sm:text-sm md:text-base pb-1 whitespace-pre-wrap">
                         {item.content}
                       </p>
                     ))}

@@ -52,6 +52,7 @@ import toast from "react-hot-toast";
 import { SiVlcmediaplayer } from "react-icons/si";
 import { updateMainLayout } from "@/redux/slices/LayoutSlice";
 import { useRouter } from "next/navigation";
+import { formatBytes } from "@/utils/formatBytes";
 
 export default function RightPart({
   children,
@@ -78,29 +79,34 @@ export default function RightPart({
   const MessageAreaRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [activeTransferFiles, setActiveTransferFiles] = useState<
-    Map<string, "start" | "loading" | "stop" | "error">
-  >(new Map());
+    Record<string, "start" | "loading" | "stop" | "error">
+  >({});
   const dispatch = useAppDispatch();
   const router = useRouter();
   const handleSendMessage = async () => {
-    let uploadedUrls: string[] = [];
+    const attachmentSize: number =
+      Number(process.env.NEXT_PUBLIC_ATTACHMENT_SIZE) || 10485760;
+    let uploadedUrls: { name: string; url: string }[] = [];
+    const overSizeFile = files.filter(
+      (file) => file.file.size > attachmentSize,
+    );
+    if (overSizeFile && overSizeFile.length > 0) {
+      toast.error(`No file should be more than ${formatBytes(attachmentSize)}`);
+      return;
+    }
     try {
       setLoading(true);
       if (files && files.length > 0 && selectedContact) {
         let currentParent = parentMessage;
         for (const file of files) {
-          setActiveTransferFiles((prev) => {
-            const updated = new Map(prev);
-            updated.set(file.URL, "start");
-            return updated;
-          });
+          setActiveTransferFiles((prev) => ({ ...prev, [file.URL]: "start" }));
           const buffer = await file.file.arrayBuffer();
           const result = await new Promise<any>((resolve, reject) => {
-            setActiveTransferFiles((prev) => {
-              const updated = new Map(prev);
-              updated.set(file.URL, "loading");
-              return updated;
-            });
+            setActiveTransferFiles((prev) => ({
+              ...prev,
+              [file.URL]: "loading",
+            }));
+
             socket?.timeout(120000).emit(
               "upload-file",
               {
@@ -119,11 +125,11 @@ export default function RightPart({
                   return reject(err);
                 }
                 if (!response?.success) {
-                  setActiveTransferFiles((prev) => {
-                    const updated = new Map(prev);
-                    updated.set(file.URL, "error");
-                    return updated;
-                  });
+                  setActiveTransferFiles((prev) => ({
+                    ...prev,
+                    [file.URL]: "error",
+                  }));
+
                   toast.error(response.message);
                   return reject(
                     new Error(response?.message ?? "Upload failed"),
@@ -133,11 +139,8 @@ export default function RightPart({
               },
             );
           });
-          setActiveTransferFiles((prev) => {
-            const updated = new Map(prev);
-            updated.set(file.URL, "stop");
-            return updated;
-          });
+          setActiveTransferFiles((prev) => ({ ...prev, [file.URL]: "stop" }));
+
           if (result.parent) {
             currentParent = result.parent;
             setParentMessage(result.parent);
@@ -151,7 +154,10 @@ export default function RightPart({
               }),
             );
             if (messageData.attachments) {
-              const urls = messageData.attachments.map((item) => item.url);
+              const urls = messageData.attachments.map((item) => ({
+                url: item.url,
+                name: item.name,
+              }));
               uploadedUrls = urls;
             }
           }
@@ -172,21 +178,40 @@ export default function RightPart({
         setSwitchTextArea(false);
       }
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.log("Error sending message:", error);
     } finally {
       try {
-        const downloadPromises = uploadedUrls.map(async (itemUrl) => {
-          const res = await axios.get(itemUrl, {
-            responseType: "blob",
+        //not refetching blob again through uploaded url
+        // const downloadPromises = uploadedUrls.map(async (itemUrl) => {
+        //   const res = await axios.get(itemUrl.url, {
+        //     responseType: "blob",
+        //   });
+        //   const downloadedBlob: Blob = res.data;
+        //   await saveToDB(itemUrl.url, downloadedBlob);
+        //   const nextLocalUrl = URL.createObjectURL(downloadedBlob);
+        //   dispatch(
+        //     setCachedUrls({
+        //       [itemUrl.url]: nextLocalUrl,
+        //     }),
+        //   );
+        // });
+
+        //using system blob for sender
+        const downloadPromises = files.map(async (file) => {
+          const downloadedBlob: Blob = new Blob([file.file], {
+            type: file.file.type,
           });
-          const downloadedBlob: Blob = res.data;
-          await saveToDB(itemUrl, downloadedBlob);
-          const nextLocalUrl = URL.createObjectURL(downloadedBlob);
-          dispatch(
-            setCachedUrls({
-              [itemUrl]: nextLocalUrl,
-            }),
+          const itemUrl = uploadedUrls.find(
+            (item) => item.name === file.file.name,
           );
+          if (itemUrl) {
+            await saveToDB(itemUrl.url, downloadedBlob);
+            dispatch(
+              setCachedUrls({
+                [itemUrl.url]: file.URL,
+              }),
+            );
+          }
         });
         await Promise.all(downloadPromises);
         await cleanupOldMedia();
@@ -195,7 +220,7 @@ export default function RightPart({
       } finally {
         setParentMessage("");
         setLoading(false);
-        files.forEach((item) => URL.revokeObjectURL(item.URL));
+        // files.forEach((item) => URL.revokeObjectURL(item.URL)); //not removing now
         setFiles([]);
       }
     }

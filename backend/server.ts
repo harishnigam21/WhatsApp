@@ -28,7 +28,7 @@ export const io = new Server(server, {
   cors: { origin: process.env.FRONTEND_HOST, credentials: true },
   pingInterval: 25000,
   pingTimeout: 60000,
-  maxHttpBufferSize: 20 * 1024 * 1024,
+  maxHttpBufferSize: 200 * 1024 * 1024,
 });
 //currently Online Users
 export const userSocketIds = new Map<string, Set<string>>();
@@ -295,7 +295,6 @@ io.on("connection", async (socket) => {
         receiver_id,
         name,
         type,
-        lastModified,
         size,
         message,
         parent,
@@ -316,7 +315,7 @@ io.on("connection", async (socket) => {
         typeof type !== "string" ||
         !Number.isSafeInteger(size) ||
         size <= 0 ||
-        size > 10 * 1024 * 1024 ||
+        size > Number(process.env.ATTACHMENT_SIZE) ||
         !buffer
       ) {
         return acknowledge({
