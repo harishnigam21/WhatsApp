@@ -241,23 +241,36 @@ export default function RightPart({
   }, []);
   useEffect(() => {
     const container = MessageAreaRef.current;
-    const item = selectedContact?.messages.slice(-1);
-    const id = item ? `message/${item[0]?._id}` : "scrollToMessage";
-    if (!container) return;
-    let frameId = 0;
-    let retryFrame = 0;
+    const messages = selectedContact?.messages;
+
+    if (!container || !messages || messages.length === 0) return;
+
+    const lastMessage = messages[messages.length - 1];
+    const id = lastMessage?._id
+      ? `message/${lastMessage._id}`
+      : "scrollToMessage";
+
+    let animationFrameId: number | null = null;
+    let attempts = 0;
+    const maxAttempts = 30; // Prevent infinite loops (~0.5 seconds at 60fps)
+
     const tryScroll = () => {
       const success = scrollToSection(id, MessageAreaRef);
-      if (!success) {
-        retryFrame = requestAnimationFrame(tryScroll);
+
+      if (!success && attempts < maxAttempts) {
+        attempts++;
+        animationFrameId = requestAnimationFrame(tryScroll);
       }
     };
-    frameId = requestAnimationFrame(tryScroll);
+
+    animationFrameId = requestAnimationFrame(tryScroll);
+
     return () => {
-      cancelAnimationFrame(frameId);
-      cancelAnimationFrame(retryFrame);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
     };
-  }, [selectedContact]);
+  }, [selectedContact, scrollToSection]);
 
   useEffect(() => {
     if (input.trim().length > 0) {
