@@ -3,7 +3,6 @@
 const nextConfig: import("next").NextConfig = {
   devIndicators: false,
   reactStrictMode: false, // Prevents useEffect from running twice in dev mode
-  output: "standalone",
   images: {
     remotePatterns: [
       {
