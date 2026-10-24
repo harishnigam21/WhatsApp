@@ -21,7 +21,7 @@ connectDB();
 const app = express();
 app.use(cookieParser());
 const server = http.createServer(app);
-const PORT = envList.PORT || 5000;
+const PORT = envList.PORT || 5004;
 
 //socket setup
 export const io = new Server(server, {
