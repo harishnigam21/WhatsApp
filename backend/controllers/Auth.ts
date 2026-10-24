@@ -96,14 +96,14 @@ export const verifyOTPCon = async (req: Request, res: Response) => {
       maxAge: 24 * 60 * 60 * 1000,
       secure: in_production,
       sameSite: in_production ? "none" : "lax",
-      // domain: process.env.TOP_DOMAIN,
+      domain: process.env.TOP_DOMAIN,
     });
     res.cookie("jwt", refresh_token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
       secure: in_production,
       sameSite: in_production ? "none" : "lax",
-      // domain: process.env.TOP_DOMAIN,
+      domain: process.env.TOP_DOMAIN,
     });
     await redisConnect.set(
       `WhatsAppUserInfo-${updateRefreshToken!._id.toString()}`,
@@ -151,14 +151,14 @@ export const handleRefresh = async (req: Request, res: Response) => {
         maxAge: 7 * 24 * 60 * 60 * 1000,
         secure: in_production,
         sameSite: in_production ? "none" : "lax",
-        // domain: process.env.TOP_DOMAIN,
+        domain: process.env.TOP_DOMAIN,
       });
       res.clearCookie("actk", {
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000,
         secure: in_production,
         sameSite: in_production ? "none" : "lax",
-        // domain: process.env.TOP_DOMAIN,
+        domain: process.env.TOP_DOMAIN,
       });
       return res.status(401).json({ message: "You are not authorized !" });
     }
