@@ -5,7 +5,6 @@ import {
   getActiveContacts,
   getAllUsers,
   getContacts,
-  getRelativeUsers,
   getUser,
   getUserMeta,
   newUser,
@@ -25,5 +24,4 @@ router.route("/meta/:id").get(jwtVerifier, getUserMeta);
 router.route("/contacts").get(jwtVerifier, getContacts);
 router.route("/active-contacts").get(jwtVerifier, getActiveContacts);
 router.route("/all").get(jwtVerifier, getAllUsers);
-router.route("/relative").get(jwtVerifier, getRelativeUsers);
 export default router;

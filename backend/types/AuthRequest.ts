@@ -9,8 +9,6 @@ export type AuthUser = {
   banner: string | null;
   bio: string;
   lastSeen: Date;
-  followers: string[];
-  following: string[];
 };
 export interface AuthRequest<
   P = any,

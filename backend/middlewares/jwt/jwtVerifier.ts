@@ -46,8 +46,6 @@ const jwtVerifier = async (
         banner: UserExist?.banner || null,
         bio: UserExist.bio,
         lastSeen: UserExist.lastSeen,
-        followers: UserExist.followers.map((item) => item.toString()),
-        following: UserExist.following.map((item) => item.toString()),
       };
       await redisConnect.set(
         `WhatsAppUserInfo-${eUser._id}`,
