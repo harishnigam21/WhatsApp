@@ -198,7 +198,7 @@ export default function Main() {
       .then(async (result) => {
         console.log(result);
         if (result && result.success) {
-          await handleVerifyOTP();
+          await handleVerifyOTP(true);
         } else {
           const responseData = result.data as {
             message: string;
@@ -226,7 +226,7 @@ export default function Main() {
       });
   };
 
-  const handleVerifyOTP = async () => {
+  const handleVerifyOTP = async (skip: boolean = false) => {
     setLoginLoading(true);
     try {
       if (!confirmationResult) {
@@ -234,13 +234,15 @@ export default function Main() {
         toast.error("Looks like you have not requested for OTP yet !");
         return;
       }
-      const result = await confirmationResult.confirm(otp.join(""));
-      const user = result.user;
-      // Get Firebase ID Token
-      const idToken = await user.getIdToken();
-      setsToken(idToken);
+      if (!skip) {
+        const result = await confirmationResult.confirm(otp.join(""));
+        const user = result.user;
+        // Get Firebase ID Token
+        const idToken = await user.getIdToken();
+        setsToken(idToken);
+      }
       // Send ID Token to your Node.js backend
-      await loginRequest("api/auth/login", "POST", { token: idToken }).then(
+      await loginRequest("api/auth/login", "POST", { token: stoken }).then(
         (result) => {
           const responseData = result.data as {
             message: string;
