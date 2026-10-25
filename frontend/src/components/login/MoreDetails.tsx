@@ -17,6 +17,7 @@ export default function MoreDetails({
   setBio,
   handleInfoSubmit,
   saveInfoLoading,
+  loginLoading,
 }: {
   Name: string;
   setName: React.Dispatch<React.SetStateAction<string>>;
@@ -30,6 +31,7 @@ export default function MoreDetails({
   setBio: React.Dispatch<React.SetStateAction<string>>;
   handleInfoSubmit: () => void;
   saveInfoLoading: boolean;
+  loginLoading: boolean;
 }) {
   const [picPreview, setPicPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
@@ -202,7 +204,7 @@ export default function MoreDetails({
           </div>
         </div>
       </div>
-      {saveInfoLoading ? (
+      {saveInfoLoading || loginLoading ? (
         <div className="flex my-12 self-center flex-nowrap items-center gap-2">
           <BarSpinner size={5} />
           <small className="font-medium text-lg">Saving...</small>

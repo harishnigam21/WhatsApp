@@ -1,13 +1,12 @@
-import useApi from "@/hooks/useApi";
-import { setLoginStatus, setUser, User } from "@/redux/slices/UserSlice";
-import { useAppDispatch } from "@/redux/Store";
-import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import toast from "react-hot-toast";
 import BarSpinner from "../loader/BarSpinner";
 import { X } from "lucide-react";
+export type OTPState = [string, string, string, string, string, string];
 
 export default function OTPVerify({
+  otp,
+  loading,
+  setOTP,
   mobileNumber,
   timer,
   countryCode,
@@ -16,7 +15,11 @@ export default function OTPVerify({
   setAgree,
   handleWrongNumber,
   handlSendOTP,
+  handleVerifyOTP,
 }: {
+  otp: OTPState;
+  loading: boolean;
+  setOTP: React.Dispatch<React.SetStateAction<OTPState>>;
   timer: number;
   countryCode: string;
   mobileNumber: string;
@@ -25,12 +28,9 @@ export default function OTPVerify({
   setAgree: React.Dispatch<React.SetStateAction<boolean>>;
   handleWrongNumber: () => void;
   handlSendOTP: () => void;
+  handleVerifyOTP: () => void;
 }) {
-  type OTPState = [string, string, string, string, string, string];
-  const { sendRequest, loading } = useApi();
-  const dispatch = useAppDispatch();
-  const router = useRouter();
-  const [otp, setOTP] = useState<OTPState>(Array(6).fill("") as OTPState);
+  // const { sendRequest, loading } = useApi();
   const [selectedOTPblock, setSelectedOTPblock] = useState<number>(0);
   useEffect(() => {
     if (!mobileNumber || !countryCode) {
@@ -44,41 +44,42 @@ export default function OTPVerify({
       targetElement.focus();
     }
   }, [selectedOTPblock]);
-  const handleOTPverify = async () => {
-    if (loading) return;
-    await sendRequest("api/auth/verify-otp", "POST", {
-      otp: otp.join(""),
-      phone: mobileNumber,
-      phoneCode: countryCode,
-    })
-      .then((result) => {
-        const responseData = result.data as {
-          message: string;
-          user: User;
-          actk: string;
-        };
-        if (result && result.success) {
-          toast.success(responseData?.message || "OTP verified successfully");
-          dispatch(setLoginStatus("authenticated"));
-          dispatch(setUser(responseData.user));
-          if (responseData.user._id) {
-            dispatch({
-              type: "socket/connect",
-              payload: responseData.user._id,
-            });
-          }
-          window.localStorage.setItem("actk", responseData.actk);
-          router.push("/");
-        } else {
-          const msg = responseData?.message || "Failed to verify OTP";
-          throw new Error(msg);
-        }
-      })
-      .catch((error) => {
-        dispatch(setLoginStatus("unauthenticated"));
-        toast.error(error?.message || "Failed to verify OTP");
-      });
-  };
+  // const handleOTPverify = async () => {
+  //   if (loading) return;
+  //   await sendRequest("api/auth/verify-otp", "POST", {
+  //     otp: otp.join(""),
+  //     phone: mobileNumber,
+  //     phoneCode: countryCode,
+  //   })
+  //     .then((result) => {
+  //       const responseData = result.data as {
+  //         message: string;
+  //         user: User;
+  //         actk: string;
+  //       };
+  //       if (result && result.success) {
+  //         toast.success(responseData?.message || "OTP verified successfully");
+  //         dispatch(setLoginStatus("authenticated"));
+  //         dispatch(setUser(responseData.user));
+  //         if (responseData.user._id) {
+  //           dispatch({
+  //             type: "socket/connect",
+  //             payload: responseData.user._id,
+  //           });
+  //         }
+  //         window.localStorage.setItem("actk", responseData.actk);
+  //         router.push("/");
+  //       } else {
+  //         const msg = responseData?.message || "Failed to verify OTP";
+  //         throw new Error(msg);
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       dispatch(setLoginStatus("unauthenticated"));
+  //       toast.error(error?.message || "Failed to verify OTP");
+  //     });
+  // };
+
   useEffect(() => {
     let check = true;
     otp.forEach((item, i) => {
@@ -86,7 +87,7 @@ export default function OTPVerify({
       check = check && result;
     });
     if (check) {
-      handleOTPverify();
+      handleVerifyOTP();
     }
   }, [otp]);
   return (
