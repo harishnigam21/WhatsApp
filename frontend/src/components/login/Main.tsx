@@ -150,8 +150,12 @@ export default function Main() {
       setResendStatus(false);
       toast.success("OTP sent successfully!");
     } catch (error) {
-      console.error("Error sending OTP:", error);
-      toast.error("Failed to send OTP");
+      let msg = "Failed to send OTP";
+      if (error instanceof Error) {
+        msg = error.message;
+      }
+      console.log("Error sending OTP:", error);
+      toast.error(msg);
     } finally {
       setSendOTPLoading(false);
     }
@@ -214,7 +218,7 @@ export default function Main() {
         }
       })
       .catch((error) => {
-        console.error(error);
+        console.log(error);
         if (error instanceof Error) {
           toast.error(error.message);
         } else {
@@ -234,15 +238,16 @@ export default function Main() {
         toast.error("Looks like you have not requested for OTP yet !");
         return;
       }
+      let idToken = null;
       if (!skip) {
         const result = await confirmationResult.confirm(otp.join(""));
         const user = result.user;
         // Get Firebase ID Token
-        const idToken = await user.getIdToken();
+        idToken = await user.getIdToken();
         setsToken(idToken);
       }
       // Send ID Token to your Node.js backend
-      await loginRequest("api/auth/login", "POST", { token: stoken }).then(
+      await loginRequest("api/auth/login", "POST", { token: idToken }).then(
         (result) => {
           const responseData = result.data as {
             message: string;
