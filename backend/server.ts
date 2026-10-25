@@ -318,7 +318,7 @@ io.on("connection", async (socket) => {
         size > Number(process.env.ATTACHMENT_SIZE) ||
         !buffer
       ) {
-        return acknowledge({
+        return acknowledge?.({
           success: false,
           message: "Invalid file or size. Maximum size is 10 MB.",
         });
@@ -328,7 +328,7 @@ io.on("connection", async (socket) => {
       const fileBuffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
 
       if (fileBuffer.length !== size) {
-        return acknowledge({ success: false, message: "File size mismatch" });
+        return acknowledge?.({ success: false, message: "File size mismatch" });
       }
       let existingMessage = null;
       if (parent) {
@@ -339,13 +339,18 @@ io.on("connection", async (socket) => {
         });
 
         if (!existingMessage) {
-          return acknowledge({
+          return acknowledge?.({
             success: false,
             message: "Parent message not found or unauthorized.",
           });
         }
       }
+      const startedAt = Date.now();
 
+      console.log("[Upload] Started", {
+        size,
+        time: new Date().toISOString(),
+      });
       const result = await new Promise<any>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           {
@@ -353,6 +358,11 @@ io.on("connection", async (socket) => {
             resource_type: "auto",
           },
           (error, result) => {
+            console.log("[Upload] Cloudinary completed", {
+              durationMs: Date.now() - startedAt,
+              success: !error && !!result,
+              error: error?.message,
+            });
             if (error) return reject(error);
             if (!result) return reject(new Error("Upload failed"));
             resolve(result);
@@ -415,7 +425,7 @@ io.on("connection", async (socket) => {
           },
         );
         if (!messageDoc) {
-          return acknowledge({
+          return acknowledge?.({
             success: false,
             message: "Could not update the parent message.",
           });
@@ -455,7 +465,7 @@ io.on("connection", async (socket) => {
         attachments: messageDoc.attachments,
         createdAt: messageDoc.createdAt,
       };
-      acknowledge({
+      acknowledge?.({
         success: true,
         messageData,
         extraData: {
@@ -477,14 +487,14 @@ io.on("connection", async (socket) => {
       }
     } catch (error: any) {
       console.error(error);
-      return acknowledge({
+      return acknowledge?.({
         success: false,
         message: error.message || "Cloudinary upload failed",
       });
     }
   });
   //on disconnect
-  socket.on("disconnect", () => {
+  socket.on("disconnect", (reason) => {
     const newDate = new Date();
     const captureLast = async () => {
       await User.findByIdAndUpdate(userId, {
@@ -492,6 +502,11 @@ io.on("connection", async (socket) => {
       });
     };
     captureLast();
+    console.error("User Disconnected", {
+      userId: userId,
+      reason,
+      time: new Date().toISOString(),
+    });
     console.log("User DisConnected", userId);
     io.emit("getOfflineUser", { userId, lastSeen: newDate });
     userSocketIds.delete(userId);
