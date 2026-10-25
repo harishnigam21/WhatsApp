@@ -1,7 +1,12 @@
 import { Response } from "express";
 import mongoose from "mongoose";
 
-export const getServerError = (res: Response, error: unknown, from: string) => {
+export const getServerError = (
+  res: Response,
+  error: unknown,
+  from: string,
+  msg?: string,
+) => {
   if (error instanceof Error) {
     console.error(`Error occurred at ${from} : `, error);
     if (error.message == "DFN") {
@@ -36,5 +41,5 @@ export const getServerError = (res: Response, error: unknown, from: string) => {
       errors: formattedErrors,
     });
   }
-  return res.status(500).json({ message: "Internal Server Error" });
+  return res.status(500).json({ message: msg || "Internal Server Error" });
 };

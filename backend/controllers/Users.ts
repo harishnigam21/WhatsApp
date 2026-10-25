@@ -63,7 +63,7 @@ export const newUser = async (req: Request, res: Response) => {
       });
       bannerUrl = upload.secure_url;
     }
-    await User.create({
+    const newUser = await User.create({
       name,
       email,
       bio,
@@ -72,12 +72,16 @@ export const newUser = async (req: Request, res: Response) => {
       pic: picUrl,
       banner: bannerUrl,
     });
-
-    const continueLogin = await eAxios.post("api/auth/send-otp", {
-      phone,
-      phoneCode,
-    });
-    return res.status(continueLogin.status).json(continueLogin.data);
+    try {
+      const continueLogin = await eAxios.post("api/auth/send-otp", {
+        phone,
+        phoneCode,
+      });
+      return res.status(continueLogin.status).json(continueLogin.data);
+    } catch (error) {
+      await User.findByIdAndDelete(newUser._id);
+      getServerError(res, error, "newUser Controller", "Failed to send OTP");
+    }
   } catch (error) {
     getServerError(res, error, "newUser Controller");
   }
@@ -109,7 +113,6 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
 
 export const getContacts = async (req: AuthRequest, res: Response) => {
   try {

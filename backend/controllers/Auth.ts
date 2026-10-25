@@ -40,7 +40,7 @@ export const sendOTPCon = async (req: Request, res: Response) => {
       phone: phoneResult.phoneNumber,
     });
   } catch (error) {
-    getServerError(res, error, "SignIn Controller");
+    getServerError(res, error, "SignIn Controller", "Failed to send OTP");
   }
 };
 
@@ -174,6 +174,13 @@ export const handleRefresh = async (req: Request, res: Response) => {
           process.env.ACCESS_TOKEN_KEY as string,
           { expiresIn: "1d" },
         );
+        res.cookie("actk", access_token, {
+          httpOnly: true,
+          maxAge: 24 * 60 * 60 * 1000,
+          secure: in_production,
+          sameSite: in_production ? "none" : "lax",
+          domain: process.env.TOP_DOMAIN,
+        });
         return res.status(200).json({ actk: access_token });
       },
     );

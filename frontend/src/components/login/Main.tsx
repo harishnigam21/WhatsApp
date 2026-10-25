@@ -66,13 +66,14 @@ export default function Main() {
           phone?: string;
           moreInfo?: boolean;
         };
-        if (
-          responseData.phone !== `${(countryCode || "") + (mobileNumber || "")}`
-        ) {
-          toast.error("Mobile number mismatches");
-          return;
-        }
         if (result && result.success) {
+          if (
+            responseData.phone !==
+            `${(countryCode || "") + (mobileNumber || "")}`
+          ) {
+            toast.error("Mobile number mismatches");
+            return;
+          }
           setVerifyOTP(true);
           setTimerStatus("start");
           setTimer(30);
