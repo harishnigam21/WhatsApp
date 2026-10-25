@@ -4,6 +4,8 @@ import { getServerError } from "../utils/serverError";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
 import redisConnect from "../config/redis_connect";
+import { app } from "../utils/firebase";
+import { getAuth } from "firebase-admin/auth";
 const in_production = process.env.IN_PRODUCTION === "true";
 export const sendOTPCon = async (req: Request, res: Response) => {
   try {
@@ -74,6 +76,90 @@ export const verifyOTPCon = async (req: Request, res: Response) => {
       });
     }
 
+    const access_token = jwt.sign(
+      { id: accountExist._id },
+      process.env.ACCESS_TOKEN_KEY!,
+      { expiresIn: "1d" },
+    );
+    const refresh_token = jwt.sign(
+      { id: accountExist._id },
+      process.env.REFRESH_TOKEN_KEY!,
+      { expiresIn: "7d" },
+    );
+    const updateRefreshToken = await User.findByIdAndUpdate(
+      accountExist._id,
+      {
+        $set: { refreshToken: refresh_token },
+      },
+      { returnDocument: "after", runValidators: true },
+    );
+    res.cookie("actk", access_token, {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+      secure: in_production,
+      sameSite: in_production ? "none" : "lax",
+      domain: process.env.TOP_DOMAIN,
+    });
+    res.cookie("jwt", refresh_token, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: in_production,
+      sameSite: in_production ? "none" : "lax",
+      domain: process.env.TOP_DOMAIN,
+    });
+    await redisConnect.set(
+      `WhatsAppUserInfo-${updateRefreshToken!._id.toString()}`,
+      JSON.stringify(updateRefreshToken),
+      "EX",
+      7 * 24 * 60 * 60,
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Phone number verified",
+      actk: access_token,
+      user: {
+        _id: updateRefreshToken!._id,
+        name: updateRefreshToken!.name,
+        email: updateRefreshToken!.email,
+        phone: updateRefreshToken!.phone,
+        phoneCode: updateRefreshToken!.phoneCode,
+        pic: updateRefreshToken!.pic,
+        banner: updateRefreshToken!.banner,
+        bio: updateRefreshToken!.bio,
+        lastSeen: updateRefreshToken!.lastSeen,
+      },
+    });
+  } catch (error) {
+    console.error("VERIFY OTP ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "OTP verification failed",
+    });
+  }
+};
+
+export const Login = async (req: Request, res: Response) => {
+  const { token } = req.body;
+  if (!token) {
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+  try {
+    const decoded = await getAuth(app).verifyIdToken(token);
+    const uid = decoded.uid;
+    const phoneNumber = decoded.phone_number;
+    const accountExist = await User.findOne({
+      fid: uid,
+      $expr: {
+        $eq: [{ $concat: ["$phoneCode", "$phone"] }, phoneNumber],
+      },
+    });
+    if (!accountExist) {
+      return res.status(401).json({
+        message: "Need more Details to Continue",
+        moreDetails: true,
+      });
+    }
     const access_token = jwt.sign(
       { id: accountExist._id },
       process.env.ACCESS_TOKEN_KEY!,

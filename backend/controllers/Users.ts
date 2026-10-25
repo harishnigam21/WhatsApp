@@ -7,16 +7,21 @@ import { getServerError } from "../utils/serverError.js";
 import cloudinary from "../utils/cloudinary.js";
 import { convertToDataUri } from "../utils/convertToDataUri.js";
 import { eAxios } from "../utils/axios.js";
+import { app } from "../utils/firebase.js";
+import { getAuth } from "firebase-admin/auth";
 interface RegistrationFiles {
   pic?: Express.Multer.File[];
   banner?: Express.Multer.File[];
 }
 export const newUser = async (req: Request, res: Response) => {
   try {
-    const { name, email, bio, phone, phoneCode } = req.body;
+    const { token, name, email, bio, phone, phoneCode } = req.body;
     const files = req.files as unknown as RegistrationFiles;
     const pic = files?.pic?.[0] || null;
     const banner = files?.banner?.[0] || null;
+    if (!token) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
     if (!phone || !phoneCode) {
       return res
         .status(400)
@@ -33,19 +38,29 @@ export const newUser = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid Email ID" });
     }
 
+    const decoded = await getAuth(app).verifyIdToken(token);
+    const uid = decoded.uid;
+    const phoneNumber = decoded.phone_number;
+
+    if (phoneNumber !== `${phoneCode + phone}`) {
+      return res.status(404).json({
+        message: "Try again with same mobile number",
+      });
+    }
     const ExistingUser = await User.findOne({
-      $or: [{ phone, phoneCode }, { email }],
+      $or: [{ fid: uid }, { phone, phoneCode }, { email }],
     });
     if (ExistingUser && ExistingUser.email == email) {
       return res.status(403).json({
         message:
-          "Sorry, but this Email is Used by some other existing Account.",
+          "Sorry, but this Email is Used by some other existing Account, Try with another Email",
       });
     }
     if (ExistingUser) {
-      return res.status(403).json({
-        message: "Account already Exist, Try with different mobile number",
+      const continueLogin = await eAxios.post("api/auth/login", {
+        token,
       });
+      return res.status(continueLogin.status).json(continueLogin.data);
     }
     let picUrl = null;
     let bannerUrl = null;
@@ -63,7 +78,8 @@ export const newUser = async (req: Request, res: Response) => {
       });
       bannerUrl = upload.secure_url;
     }
-    const newUser = await User.create({
+    await User.create({
+      fid: uid,
       name,
       email,
       bio,
@@ -72,18 +88,9 @@ export const newUser = async (req: Request, res: Response) => {
       pic: picUrl,
       banner: bannerUrl,
     });
-    try {
-      const continueLogin = await eAxios.post("api/auth/send-otp", {
-        phone,
-        phoneCode,
-      });
-      return res.status(continueLogin.status).json(continueLogin.data);
-    } catch (error) {
-      await User.findByIdAndDelete(newUser._id);
-      getServerError(res, error, "newUser Controller", "Failed to send OTP");
-    }
+    return res.status(201).json({ message: "Welcome!" });
   } catch (error) {
-    getServerError(res, error, "newUser Controller");
+    getServerError(res, error, "newUser Controller", "Failed to Verify OTP");
   }
 };
 export const getUser = async (req: AuthRequest, res: Response) => {
