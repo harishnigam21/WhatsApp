@@ -24,7 +24,7 @@ export default function AttachmentSection({
   const [selectedFiles, setSelectedFiles] = useState<number>(0);
 
   return (
-    <div className="absolute top-0 left-0 w-full h-full pt-15">
+    <div className="absolute top-0 left-0 z-11 w-full h-full pt-15">
       <div className="relative bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)] w-full h-full border-t border-borderhl/30 flex flex-col justify-between">
         <div className="flex grow flex-col items-center justify-between gap-2 overflow-hidden">
           <div className="flex flex-nowrap justify-between gap-4 items-center w-full px-1 sm:px-3">

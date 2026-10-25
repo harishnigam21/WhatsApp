@@ -178,6 +178,7 @@ export default function RightPart({
         setSwitchTextArea(false);
       }
     } catch (error) {
+      toast.error("Failed to send Attachment.");
       console.log("Error sending message:", error);
     } finally {
       try {

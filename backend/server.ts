@@ -27,7 +27,7 @@ const PORT = envList.PORT || 5004;
 export const io = new Server(server, {
   cors: { origin: process.env.FRONTEND_HOST, credentials: true },
   pingInterval: 25000,
-  pingTimeout: 60000,
+  pingTimeout: 120000,
   maxHttpBufferSize: 200 * 1024 * 1024,
 });
 //currently Online Users
