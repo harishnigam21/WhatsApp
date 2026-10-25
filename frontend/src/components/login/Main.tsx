@@ -202,7 +202,11 @@ export default function Main() {
       .then(async (result) => {
         console.log(result);
         if (result && result.success) {
-          await handleVerifyOTP(true);
+          const responseData = result.data as {
+            tk: string;
+          };
+          const tk = responseData.tk || null;
+          await handleVerifyOTP(true, tk);
         } else {
           const responseData = result.data as {
             message: string;
@@ -230,7 +234,10 @@ export default function Main() {
       });
   };
 
-  const handleVerifyOTP = async (skip: boolean = false) => {
+  const handleVerifyOTP = async (
+    skip: boolean = false,
+    tk: string | null = null,
+  ) => {
     setLoginLoading(true);
     try {
       if (!confirmationResult) {
@@ -238,7 +245,7 @@ export default function Main() {
         toast.error("Looks like you have not requested for OTP yet !");
         return;
       }
-      let idToken = null;
+      let idToken = tk;
       if (!skip) {
         const result = await confirmationResult.confirm(otp.join(""));
         const user = result.user;

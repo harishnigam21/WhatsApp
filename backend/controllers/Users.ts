@@ -88,7 +88,7 @@ export const newUser = async (req: Request, res: Response) => {
       pic: picUrl,
       banner: bannerUrl,
     });
-    return res.status(201).json({ message: "Welcome!" });
+    return res.status(201).json({ message: "Welcome!", tk: token });
   } catch (error) {
     getServerError(res, error, "newUser Controller", "Failed to Verify OTP");
   }
