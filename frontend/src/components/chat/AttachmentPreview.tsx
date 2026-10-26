@@ -80,7 +80,7 @@ const FilePreviewBox = ({
     >
       {item.type.startsWith("image/") ? (
         <Image
-          src={item?.thumbnail || item.blobUrl}
+          src={item.blobUrl || item.thumbnail!}
           alt="no preview"
           width={5}
           height={5}

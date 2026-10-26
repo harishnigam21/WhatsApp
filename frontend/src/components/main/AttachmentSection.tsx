@@ -18,7 +18,10 @@ export default function AttachmentSection({
     React.SetStateAction<{ file: File; URL: string; message: string }[]>
   >;
   loading: boolean;
-  activeTransferFiles: Record<string, "start" | "loading" | "stop" | "error">;
+  activeTransferFiles: Record<
+    string,
+    { status: "start" | "loading" | "stop" | "error"; progress: number }
+  >;
   handleSendMessage: () => void;
 }) {
   const [selectedFiles, setSelectedFiles] = useState<number>(0);
@@ -167,31 +170,37 @@ const FilePreviewBox = ({
     React.SetStateAction<{ file: File; URL: string; message: string }[]>
   >;
   selectedFiles: number;
-  activeTransferFiles: Record<string, "start" | "loading" | "stop" | "error">;
+  activeTransferFiles: Record<
+    string,
+    { status: "start" | "loading" | "stop" | "error"; progress: number }
+  >;
 }) => {
   const [progress, setProgress] = useState<number>(0);
   useEffect(() => {
     const fileStatus = activeTransferFiles[item.URL];
-    if (!fileStatus) {
-      setProgress(0);
-      return;
+    if (fileStatus) {
+      setProgress(fileStatus.progress);
     }
-    if (fileStatus === "stop") {
-      setProgress(100);
-      return;
-    }
-    if (fileStatus === "start" || fileStatus === "loading") {
-      setProgress((prev) => (prev >= 80 ? 0 : prev));
-      const progressing = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 80) {
-            return prev;
-          }
-          return prev + 5;
-        });
-      }, 600);
-      return () => clearInterval(progressing);
-    }
+    // if (!fileStatus) {
+    //   setProgress(0);
+    //   return;
+    // }
+    // if (fileStatus === "stop") {
+    //   setProgress(100);
+    //   return;
+    // }
+    // if (fileStatus === "start" || fileStatus === "loading") {
+    //   setProgress((prev) => (prev >= 80 ? 0 : prev));
+    //   const progressing = setInterval(() => {
+    //     setProgress((prev) => {
+    //       if (prev >= 80) {
+    //         return prev;
+    //       }
+    //       return prev + 5;
+    //     });
+    //   }, 600);
+    //   return () => clearInterval(progressing);
+    // }
   }, [activeTransferFiles]);
   return (
     <div
@@ -227,7 +236,7 @@ const FilePreviewBox = ({
       <div className="absolute top-0 left-0 w-full h-full flex items-end">
         <div
           style={{ height: `${progress}%` }}
-          className="bg-blue-500/50 w-full transition-all"
+          className={`${activeTransferFiles[item.URL]?.status == "error" ? "bg-red-500/50" : "bg-blue-500/50"} w-full transition-all`}
         ></div>
       </div>
     </div>

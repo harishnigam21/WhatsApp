@@ -75,18 +75,19 @@ export default function RightPart({
   const [files, setFiles] = useState<
     { file: File; URL: string; message: string }[]
   >([]);
-  const [parentMessage, setParentMessage] = useState<string | null>(null);
   const MessageAreaRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [activeTransferFiles, setActiveTransferFiles] = useState<
-    Record<string, "start" | "loading" | "stop" | "error">
+    Record<
+      string,
+      { status: "start" | "loading" | "stop" | "error"; progress: number }
+    >
   >({});
   const dispatch = useAppDispatch();
   const router = useRouter();
   const handleSendMessage = async () => {
     const attachmentSize: number =
       Number(process.env.NEXT_PUBLIC_ATTACHMENT_SIZE) || 10485760;
-    let uploadedUrls: { name: string; url: string }[] = [];
     const overSizeFile = files.filter(
       (file) => file.file.size > attachmentSize,
     );
@@ -94,72 +95,290 @@ export default function RightPart({
       toast.error(`No file should be more than ${formatBytes(attachmentSize)}`);
       return;
     }
-    try {
-      setLoading(true);
-      if (files && files.length > 0 && selectedContact) {
-        let currentParent = parentMessage;
-        for (const file of files) {
-          setActiveTransferFiles((prev) => ({ ...prev, [file.URL]: "start" }));
-          const buffer = await file.file.arrayBuffer();
-          const result = await new Promise<any>((resolve, reject) => {
+
+    type UploadPayloadResponse = {
+      success: boolean;
+      signature: string;
+      timestamp: string | number;
+      apiKey: string;
+      cloudName: string;
+      folder: string;
+      publicId: string;
+      message?: string;
+      eval: string;
+    };
+
+    type CloudinaryUploadResponse = {
+      secure_url: string;
+      public_id: string;
+      resource_type: string;
+      format: string;
+      original_filename?: string;
+      created_at: string;
+      bytes: number;
+      tags?: string[];
+    };
+
+    type FileMessageResponse = {
+      success: boolean;
+      message?: string;
+      messageData?: MessageType;
+      extraData?: {
+        senderDetail: {
+          _id: string;
+          name: string;
+          pic: string;
+          lastSeen: Date;
+        };
+        receiverDetail: {
+          _id: string;
+          name: string;
+          pic: string;
+          lastSeen: Date;
+        };
+      };
+      parent?: string;
+    };
+
+    const emitWithAck = <T,>(event: string, payload: unknown): Promise<T> => {
+      return new Promise<T>((resolve, reject) => {
+        if (!socket?.connected) {
+          reject(new Error("Socket is not connected."));
+          return;
+        }
+
+        socket.emit(event, payload, (err: Error | null, response: T) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          if (!response) {
+            reject(new Error(`No response received for ${event}.`));
+            return;
+          }
+
+          resolve(response);
+        });
+      });
+    };
+
+    const uploadToCloudinary = (
+      file: File,
+      credentials: {
+        cloudName: string;
+        apiKey: string;
+        timestamp: string;
+        signature: string;
+        folder: string;
+        publicId: string;
+        eval: string;
+      },
+      onProgress: (percentage: number) => void,
+    ): Promise<any> => {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+
+        formData.append("file", file);
+        formData.append("api_key", credentials.apiKey);
+        formData.append("timestamp", credentials.timestamp);
+        formData.append("signature", credentials.signature);
+        formData.append("folder", credentials.folder);
+        formData.append("public_id", credentials.publicId);
+        formData.append("eval", credentials.eval);
+        formData.append("tags", "status_pending");
+
+        xhr.upload.addEventListener("progress", (event) => {
+          if (event.lengthComputable) {
+            const percentage = Math.round((event.loaded / event.total) * 100);
+
+            onProgress(percentage);
+          }
+        });
+
+        xhr.addEventListener("load", () => {
+          let response: any;
+
+          try {
+            response = JSON.parse(xhr.responseText);
+          } catch {
+            reject(new Error("Invalid Cloudinary response."));
+            return;
+          }
+
+          if (xhr.status >= 200 && xhr.status < 300) {
+            onProgress(100);
+            resolve(response);
+          } else {
+            reject(
+              new Error(
+                response?.error?.message ?? "Cloudinary upload failed.",
+              ),
+            );
+          }
+        });
+
+        xhr.addEventListener("error", () => {
+          reject(new Error("Network error during Cloudinary upload."));
+        });
+
+        xhr.addEventListener("abort", () => {
+          reject(new Error("Cloudinary upload was cancelled."));
+        });
+
+        xhr.addEventListener("timeout", () => {
+          reject(new Error("Cloudinary upload timed out."));
+        });
+
+        xhr.open(
+          "POST",
+          `https://api.cloudinary.com/v1_1/${credentials.cloudName}/auto/upload`,
+        );
+
+        xhr.timeout = 0;
+        xhr.send(formData);
+      });
+    };
+
+    const uploadOneFile = async (
+      file: (typeof files)[number],
+      currentParent: string | null,
+      changeParent: (id: string | null) => void,
+    ) => {
+      setActiveTransferFiles((prev) => ({
+        ...prev,
+        [file.URL]: { status: "loading", progress: 0 },
+      }));
+
+      try {
+        // 1. Request signed upload credentials.
+        const credentials = await emitWithAck<UploadPayloadResponse>(
+          "request-file-payload",
+          {
+            name: file.file.name,
+            receiver: selectedContact?._id,
+            size: file.file.size,
+          },
+        );
+        if (!credentials.success) {
+          throw new Error(
+            credentials.message ?? "Could not prepare the upload.",
+          );
+        }
+
+        const cloudinaryData = await uploadToCloudinary(
+          file.file,
+          {
+            cloudName: credentials.cloudName,
+            apiKey: credentials.apiKey,
+            timestamp: String(credentials.timestamp),
+            signature: credentials.signature,
+            folder: credentials.folder,
+            publicId: credentials.publicId,
+            eval: credentials.eval,
+          },
+          (percentage) => {
             setActiveTransferFiles((prev) => ({
               ...prev,
-              [file.URL]: "loading",
+              [file.URL]: {
+                status: "loading",
+                progress: percentage,
+              },
             }));
+          },
+        );
 
-            socket?.timeout(120000).emit(
-              "upload-file",
-              {
-                sender_id: userId,
-                receiver_id: selectedContact._id,
-                name: file.file.name,
-                type: file.file.type,
-                lastModified: file.file.lastModified,
-                size: file.file.size,
-                message: file.message,
-                parent: currentParent,
-                buffer,
-              },
-              (err: Error | null, response: any) => {
-                if (err) {
-                  return reject(err);
-                }
-                if (!response?.success) {
-                  setActiveTransferFiles((prev) => ({
-                    ...prev,
-                    [file.URL]: "error",
-                  }));
+        const data = cloudinaryData as CloudinaryUploadResponse;
 
-                  toast.error(response.message);
-                  return reject(
-                    new Error(response?.message ?? "Upload failed"),
-                  );
-                }
-                resolve(response);
-              },
-            );
-          });
-          setActiveTransferFiles((prev) => ({ ...prev, [file.URL]: "stop" }));
+        // 3. Prepare thumbnail and persist the original file.
+        const thumbnail =
+          data.resource_type === "image"
+            ? data.secure_url.replace(
+                "/upload/",
+                "/upload/e_blur:1000,q_10,w_200/",
+              )
+            : null;
+        await cleanupOldMedia();
+        dispatch(
+          setCachedUrls({
+            [data.secure_url]: file.URL,
+          }),
+        );
+        await saveToDB(
+          data.secure_url,
+          new Blob([file.file], { type: file.file.type }),
+        );
+        // 4. Create the message on the backend.
+        // Send metadata, not the file buffer again.
+        const toUpload = {
+          sender_id: userId,
+          receiver_id: selectedContact!._id,
+          parent: currentParent,
+          message: file.message,
+          url: data.secure_url,
+          thumbnail,
+          public_id: data.public_id,
+          type: file.file.type,
+          resource_type: data.resource_type,
+          format: data.format,
+          name: data.original_filename ?? file.file.name,
+          created_at: data.created_at,
+          size: data.bytes,
+          tags: data.tags ?? [],
+        };
+        const messageResponse = await emitWithAck<FileMessageResponse>(
+          "upload-file",
+          toUpload,
+        );
+        if (!messageResponse.success) {
+          throw new Error(
+            messageResponse.message ?? "Could not create the message.",
+          );
+        }
 
-          if (result.parent) {
-            currentParent = result.parent;
-            setParentMessage(result.parent);
-          }
-          if (result.messageData && result.extraData) {
-            const messageData: MessageType = result.messageData!;
-            dispatch(
-              addSenderMessage({
-                data: messageData,
-                extra: result.extraData!,
-              }),
-            );
-            if (messageData.attachments) {
-              const urls = messageData.attachments.map((item) => ({
-                url: item.url,
-                name: item.name,
-              }));
-              uploadedUrls = urls;
-            }
+        // 5. Update Redux only after message creation succeeds.
+        if (messageResponse.messageData && messageResponse.extraData) {
+          changeParent(messageResponse?.parent || null);
+          dispatch(
+            addSenderMessage({
+              data: messageResponse.messageData,
+              extra: messageResponse.extraData,
+            }),
+          );
+        }
+
+        setActiveTransferFiles((prev) => ({
+          ...prev,
+          [file.URL]: { status: "stop", progress: 100 },
+        }));
+
+        return messageResponse;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Upload failed.";
+        setActiveTransferFiles((prev) => ({
+          ...prev,
+          [file.URL]: { ...prev[file.URL], status: "error" },
+        }));
+        toast.error(`${file.file.name}: ${message}`);
+        throw error;
+      }
+    };
+
+    try {
+      setLoading(true);
+      if (files?.length && selectedContact) {
+        let currentParent = null;
+        const changeParent = (id: string | null) => {
+          currentParent = id;
+        };
+        for (const file of files) {
+          try {
+            await uploadOneFile(file, currentParent, changeParent);
+          } catch (error) {
+            // This allows the remaining files to continue uploading.
+            console.error(`Failed to upload:`, error);
           }
         }
       } else {
@@ -181,49 +400,9 @@ export default function RightPart({
       toast.error("Failed to send Attachment.");
       console.log("Error sending message:", error);
     } finally {
-      try {
-        //not refetching blob again through uploaded url
-        // const downloadPromises = uploadedUrls.map(async (itemUrl) => {
-        //   const res = await axios.get(itemUrl.url, {
-        //     responseType: "blob",
-        //   });
-        //   const downloadedBlob: Blob = res.data;
-        //   await saveToDB(itemUrl.url, downloadedBlob);
-        //   const nextLocalUrl = URL.createObjectURL(downloadedBlob);
-        //   dispatch(
-        //     setCachedUrls({
-        //       [itemUrl.url]: nextLocalUrl,
-        //     }),
-        //   );
-        // });
-
-        //using system blob for sender
-        const downloadPromises = files.map(async (file) => {
-          const downloadedBlob: Blob = new Blob([file.file], {
-            type: file.file.type,
-          });
-          const itemUrl = uploadedUrls.find(
-            (item) => item.name === file.file.name,
-          );
-          if (itemUrl) {
-            await saveToDB(itemUrl.url, downloadedBlob);
-            dispatch(
-              setCachedUrls({
-                [itemUrl.url]: file.URL,
-              }),
-            );
-          }
-        });
-        await Promise.all(downloadPromises);
-        await cleanupOldMedia();
-      } catch (cacheError) {
-        console.error("Error caching files to IndexedDB:", cacheError);
-      } finally {
-        setParentMessage("");
-        setLoading(false);
-        // files.forEach((item) => URL.revokeObjectURL(item.URL)); //not removing now
-        setFiles([]);
-      }
+      setLoading(false);
+      // files.forEach((item) => URL.revokeObjectURL(item.URL)); //not removing now
+      setFiles([]);
     }
   };
   const [options, setOptions] = useState<boolean>(false);
@@ -530,7 +709,7 @@ const TextArea = ({
   }, []);
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight < 24 ? 24 : textareaRef.current.scrollHeight}px`;
     }
   }, [input]);
   return (
