@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { cleanupOldMedia, getFromDB, saveToDB } from "@/utils/indexedDB";
 import { formatBytes } from "@/utils/formatBytes";
 import { ArrowDown, LoaderCircle } from "lucide-react";
-import axios from "axios";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import AttachmentPreview, { FileItemType } from "./AttachmentPreview";
 
@@ -21,6 +20,7 @@ export default function AttachmentGrid({
   const gridColCalculate = attachmentLength > 2 ? 2 : attachmentLength;
   const [URLtoDownload, setURLToDownload] = useState<string[]>([]);
   const [toDownload, setToDownload] = useState<number>(0);
+  const [totalDownload, setTotalDownload] = useState<number>(0);
   const [download, setDownload] = useState<boolean>(false);
   const [selectedFile, setSelectedFile] = useState<FileItemType[] | null>(null);
   const [ABS, setABS] = useState<number>(0); //Attachment block size
@@ -31,19 +31,42 @@ export default function AttachmentGrid({
     const originalSizeBackup = toDownload;
     try {
       setDownload(true);
+      const progressMap: { [url: string]: number } = {};
       const downloadPromises = URLtoDownload.map(async (itemUrl) => {
         let nextLocalUrl;
-        let sizeInBytes = 0;
         const cached = await getFromDB(itemUrl);
         if (cached) {
           nextLocalUrl = URL.createObjectURL(cached.blob);
-          sizeInBytes = cached.blob.size;
+          progressMap[itemUrl] = cached.blob.size;
+          updateCombinedProgress(progressMap);
         } else {
-          const res = await axios.get(itemUrl, {
-            responseType: "blob",
+          const downloadedBlob = await new Promise<Blob>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", itemUrl, true);
+            xhr.responseType = "blob";
+            xhr.addEventListener("progress", (event) => {
+              if (event.lengthComputable) {
+                progressMap[itemUrl] = event.loaded;
+                updateCombinedProgress(progressMap);
+              }
+            });
+            xhr.addEventListener("load", () => {
+              if (xhr.status === 200) {
+                resolve(xhr.response);
+              } else {
+                reject(
+                  new Error(`Download failed with status code: ${xhr.status}`),
+                );
+              }
+            });
+            xhr.addEventListener("error", () => {
+              reject(new Error("A network infrastructure error occurred."));
+            });
+            xhr.send();
           });
-          const downloadedBlob: Blob = res.data;
-          sizeInBytes = downloadedBlob.size;
+          progressMap[itemUrl] = downloadedBlob.size;
+          updateCombinedProgress(progressMap);
+
           await saveToDB(itemUrl, downloadedBlob);
           nextLocalUrl = URL.createObjectURL(downloadedBlob);
         }
@@ -55,7 +78,7 @@ export default function AttachmentGrid({
         );
 
         // Track remaining download size meters reactively
-        setToDownload((prev) => (prev > sizeInBytes ? prev - sizeInBytes : 0));
+        // setToDownload((prev) => (prev > sizeInBytes ? prev - sizeInBytes : 0));
         setURLToDownload((prevList) =>
           prevList.filter((url) => url !== itemUrl),
         );
@@ -71,6 +94,13 @@ export default function AttachmentGrid({
       setDownload(false);
     }
   };
+  const updateCombinedProgress = (progressMap: { [url: string]: number }) => {
+  const totalLoaded = Object.values(progressMap).reduce((sum, val) => sum + val, 0);
+  setToDownload(() => {
+    const remaining = totalDownload - totalLoaded;
+    return remaining > 0 ? remaining : 0;
+  });
+};
   useEffect(() => {
     const maxSize = (sectionWidth * (50 / 100)) / 2;
     if (attachment.length == 1) {
@@ -104,6 +134,7 @@ export default function AttachmentGrid({
       // Batch all updates precisely into one render tick
       if (isMounted) {
         setToDownload(accumulatedDownloadSize);
+        setTotalDownload(accumulatedDownloadSize);
         setURLToDownload(outstandingDownloads);
         dispatch(setCachedUrls(Object.fromEntries(locallyFoundMap)));
       }
@@ -158,7 +189,7 @@ export default function AttachmentGrid({
                   loading="lazy"
                   width={10}
                   height={10}
-                  className="w-full h-full object-cover object-center rounded-lg"
+                  className="w-full h-full object-cover object-center rounded-lg overflow-hidden"
                 />
               </div>
             ) : (
@@ -184,7 +215,10 @@ export default function AttachmentGrid({
                     }
                   }}
                 >
-                  {renderFileIcon({ type: item.type } as File)}
+                  {renderFileIcon(
+                    { type: item.type } as File,
+                    attachment.length > 1 ? 7 : 18,
+                  )}
                 </div>
               </div>
             ))}

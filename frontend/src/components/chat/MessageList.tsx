@@ -82,7 +82,7 @@ export default function MessageList() {
                     sectionWidth={sectionWidth}
                   />
                 )}
-                <div className="flex flex-nowrap w-full py-0.5 px-1.5">
+                <div className="flex flex-nowrap w-full py-0.5 px-1.5 mt-1">
                   {!attachment ||
                     (attachment.length <= 1 && (
                       <p className="text-xs sm:text-sm md:text-base pb-1 whitespace-pre-wrap">
