@@ -783,7 +783,7 @@ export const renderFileIcon = (file: File, size?: number) => {
     return (
       <SiVlcmediaplayer
         style={{ width: `${s}px`, height: `${s}px` }}
-        className="text-orange-600"
+        className="text-orange-600 "
       />
     );
   }
