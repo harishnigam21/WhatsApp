@@ -14,23 +14,17 @@ import {
   Mic,
   Paperclip,
   Phone,
-  Plus,
   Search,
   UserPlus,
   Video,
   File as GenericFile,
-  X,
-  LoaderCircle,
   Headphones,
   ArrowLeft,
-  Info,
-  CircleX,
+  X,
+  Star,
+  Trash,
+  Forward,
   Download,
-  BookCopy,
-  Heart,
-  Palette,
-  ClockFading,
-  SquareCheck,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
@@ -42,17 +36,20 @@ import { socket } from "@/redux/socketMiddleware";
 import {
   addSenderMessage,
   clearSelectedContact,
+  clearSelectionFor,
   MessageType,
   setCachedUrls,
+  setSelectedFor,
+  setSelectionFor,
 } from "@/redux/slices/ChatSlice";
 import AttachmentSection from "./AttachmentSection";
-import axios from "axios";
 import { cleanupOldMedia, saveToDB } from "@/utils/indexedDB";
 import toast from "react-hot-toast";
 import { SiVlcmediaplayer } from "react-icons/si";
 import { updateMainLayout } from "@/redux/slices/LayoutSlice";
 import { useRouter } from "next/navigation";
 import { formatBytes } from "@/utils/formatBytes";
+import RightPartMenu from "./RightPartMenu";
 
 export default function RightPart({
   children,
@@ -406,19 +403,7 @@ export default function RightPart({
     }
   };
   const [options, setOptions] = useState<boolean>(false);
-  const optionRef = useRef<HTMLOListElement>(null);
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        optionRef.current &&
-        !optionRef.current.contains(event.target as Node)
-      ) {
-        setOptions(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const { selectedFor, selectionFor } = useAppSelector((store) => store.chat);
   useEffect(() => {
     const container = MessageAreaRef.current;
     const messages = selectedContact?.messages;
@@ -529,50 +514,16 @@ export default function RightPart({
           ))}
           <div title="Menu" className="flex flex-col relative">
             <div
+              id="rightellipsis"
               className="hover:bg-borderhl/30 active:bg-borderhl/30 rounded-full p-2.5 cursor-pointer transition-all"
-              onClick={() => setOptions((prev) => !prev)}
+              onClick={() => {
+                setOptions((prev) => !prev);
+              }}
             >
               <EllipsisVertical className="size-5" />
             </div>
             {options && (
-              <ol
-                ref={optionRef}
-                className="absolute z-10 top-9 right-0 gap-1 flex flex-col bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_40%)] max-w-fit p-1 whitespace-nowrap line-clamp-1 rounded-lg border border-borderhl/40 font-medium"
-              >
-                {optionItem.map((item, i) => (
-                  <li
-                    title={item.name}
-                    key={`rightbar/up_part/icon/${i}`}
-                    className="hover:bg-borderhl/30 active:bg-borderhl/30 rounded-lg p-2 cursor-pointer transition-all flex items-center gap-2 min-[480px]:hidden"
-                  >
-                    <div>
-                      <item.icon size={16} />
-                    </div>
-                    <p className="text-sm">{item.name}</p>
-                  </li>
-                ))}
-                {[
-                  { name: "Contact info", icon: Info },
-                  { name: "Select messages", icon: SquareCheck },
-                  { name: "Disappearing messages", icon: ClockFading },
-                  { name: "Chat theme", icon: Palette },
-                  { name: "Add to favorites", icon: Heart },
-                  { name: "Add to list", icon: BookCopy },
-                  { name: "Export chat", icon: Download },
-                  { name: "Close chat", icon: CircleX },
-                ].map((item, i) => (
-                  <li
-                    title={item.name}
-                    key={`rightbar/up_part/icon/${i}`}
-                    className="hover:bg-borderhl/30 active:bg-borderhl/30 rounded-lg p-2 cursor-pointer transition-all flex items-center gap-2"
-                  >
-                    <div>
-                      <item.icon size={16} />
-                    </div>
-                    <p className="text-sm">{item.name}</p>
-                  </li>
-                ))}
-              </ol>
+              <RightPartMenu optionItem={optionItem} setOptions={setOptions} />
             )}
           </div>
         </div>
@@ -589,89 +540,125 @@ export default function RightPart({
           {/* chat area */}
           <article
             ref={MessageAreaRef}
-            className=" grow overflow-y-auto scrollbar-thin scrollbar-thumb-borderhl h-10 flex flex-col justify-end-safe"
+            className=" grow overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-borderhl h-10 flex flex-col justify-end-safe"
           >
             {children}
           </article>
           {/* input field */}
-          <div className="px-4 w-full flex flex-col justify-center mb-2 items-center">
-            <div className="relative w-full">
-              <Emoji
-                setMessage={setInput}
-                showPicker={showPicker}
-                setShowPicker={setShowPicker}
-              />
+          {selectedFor ? (
+            <div className="w-full py-5 px-3 flex items-center justify-between flex-nowrap bg-bgsec/90">
+              <div className="flex flex-nowrap items-center gap-4">
+                <button
+                  className="cursor-pointer rounded-full p-2 hover:bg-borderhl/50 active:bg-borderhl/50 transition-all"
+                  onClick={() => {
+                    dispatch(setSelectedFor(false));
+                    dispatch(clearSelectionFor());
+                  }}
+                >
+                  <X size={20} />
+                </button>
+                <p className="mb-1">
+                  <span>{selectionFor.length}</span>
+                  <span className="pl-2">selected</span>
+                </p>
+              </div>
+              <div className="flex flex-nowrap items-center gap-4">
+                {[
+                  { icon: Star, name: "Star" },
+                  { icon: Trash, name: "Delete" },
+                  { icon: Forward, name: "Forward" },
+                  { icon: Download, name: "Download" },
+                ].map((item, i) => (
+                  <button
+                    disabled={selectionFor.length == 0}
+                    title={item.name}
+                    key={`selected/perform/operation/${i}`}
+                  >
+                    <item.icon size={20} />
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="relative w-full">
-              <AttachItems
-                files={files}
-                setFiles={setFiles}
-                showAttachOptions={showAttachOptions}
-                setShowAttachOptions={setShowAttachOptions}
-              />
-            </div>
-            <div className="w-full rounded-3xl bg-[color-mix(in_srgb,var(--color-bgpri)_50%,var(--color-bgsec)_100%)]">
-              <div className="flex flex-col flex-nowrap bg-borderhl/30 border border-borderhl/60 items-center w-full rounded-3xl p-1.5">
-                {switchTextArea && (
-                  <div className="p-1 h-fit overflow-hidden w-full">
-                    <TextArea
-                      input={input}
-                      setInput={setInput}
-                      setSwitchTextArea={setSwitchTextArea}
-                      handleSendMessage={handleSendMessage}
-                    />
-                  </div>
-                )}
-                <div className="flex flex-nowrap justify-between items-center w-full">
-                  <div className="flex flex-nowrap items-center">
-                    <div
-                      className="rounded-full p-2 hover:bg-borderhl/30 cursor-pointer flex self-end"
-                      onClick={() => setShowAttachOptions((prev) => !prev)}
-                    >
-                      <Paperclip
-                        size={20}
-                        strokeWidth={2}
-                        className=" -rotate-45"
+          ) : (
+            <div className="px-4 w-full flex flex-col justify-center mb-2 items-center">
+              <div className="relative w-full">
+                <Emoji
+                  setMessage={setInput}
+                  showPicker={showPicker}
+                  setShowPicker={setShowPicker}
+                />
+              </div>
+              <div className="relative w-full">
+                <AttachItems
+                  files={files}
+                  setFiles={setFiles}
+                  showAttachOptions={showAttachOptions}
+                  setShowAttachOptions={setShowAttachOptions}
+                />
+              </div>
+              <div className="w-full rounded-3xl bg-[color-mix(in_srgb,var(--color-bgpri)_50%,var(--color-bgsec)_100%)]">
+                <div className="flex flex-col flex-nowrap bg-borderhl/30 border border-borderhl/60 items-center w-full rounded-3xl p-1.5">
+                  {switchTextArea && (
+                    <div className="p-1 h-fit overflow-hidden w-full">
+                      <TextArea
+                        input={input}
+                        setInput={setInput}
+                        setSwitchTextArea={setSwitchTextArea}
+                        handleSendMessage={handleSendMessage}
                       />
                     </div>
-                    <div
-                      className="rounded-full p-2 hover:bg-borderhl/30 cursor-pointer flex self-end mr-2"
-                      onClick={() => setShowPicker((prev) => !prev)}
-                    >
-                      <FaceSlightlySmiling
-                        size={20}
-                        strokeWidth={2}
-                        className=""
-                      />
-                    </div>
-                  </div>
-                  {!switchTextArea && (
-                    <TextArea
-                      input={input}
-                      setInput={setInput}
-                      setSwitchTextArea={setSwitchTextArea}
-                      handleSendMessage={handleSendMessage}
-                    />
                   )}
-                  <div className="flex flex-nowrap self-end">
-                    {!sendDisable && input.length > 0 ? (
-                      <button
-                        disabled={sendDisable}
-                        className={`p-2 cursor-pointer bg-pri text-black fill-black ${sendDisable && "bg-borderhl text-black"}  rounded-full`}
-                        onClick={handleSendMessage}
+                  <div className="flex flex-nowrap justify-between items-center w-full">
+                    <div className="flex flex-nowrap items-center">
+                      <div
+                        className="rounded-full p-2 hover:bg-borderhl/30 cursor-pointer flex self-end"
+                        onClick={() => setShowAttachOptions((prev) => !prev)}
                       >
-                        <IoSendSharp size={20} strokeWidth={3} />
-                      </button>
-                    ) : (
-                      <div className="p-2 cursor-pointer mr-2">
-                        <Mic strokeWidth={1.5} size={20} className="" />
+                        <Paperclip
+                          size={20}
+                          strokeWidth={2}
+                          className=" -rotate-45"
+                        />
                       </div>
+                      <div
+                        className="rounded-full p-2 hover:bg-borderhl/30 cursor-pointer flex self-end mr-2"
+                        onClick={() => setShowPicker((prev) => !prev)}
+                      >
+                        <FaceSlightlySmiling
+                          size={20}
+                          strokeWidth={2}
+                          className=""
+                        />
+                      </div>
+                    </div>
+                    {!switchTextArea && (
+                      <TextArea
+                        input={input}
+                        setInput={setInput}
+                        setSwitchTextArea={setSwitchTextArea}
+                        handleSendMessage={handleSendMessage}
+                      />
                     )}
+                    <div className="flex flex-nowrap self-end">
+                      {!sendDisable && input.length > 0 ? (
+                        <button
+                          disabled={sendDisable}
+                          className={`p-2 cursor-pointer bg-pri text-black fill-black ${sendDisable && "bg-borderhl text-black"}  rounded-full`}
+                          onClick={handleSendMessage}
+                        >
+                          <IoSendSharp size={20} strokeWidth={3} />
+                        </button>
+                      ) : (
+                        <div className="p-2 cursor-pointer mr-2">
+                          <Mic strokeWidth={1.5} size={20} className="" />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </article>
       </article>
       {/* attachment */}

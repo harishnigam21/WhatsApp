@@ -186,6 +186,7 @@ export default function LeftPart({
           <div className="flex flex-nowrap items-center gap-2">
             <div className="relative">
               <div
+                id="leftellipsis"
                 onClick={() => {
                   setOptions((prev) => !prev);
                 }}

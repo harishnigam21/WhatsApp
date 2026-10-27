@@ -20,7 +20,7 @@ export default function Welcome({
   }, []);
   return (
     <section className="relative text-txpri w-full grow grid grid-cols-1 md:grid-cols-2 p-2 md:p-4 lg:p-8">
-      <div className="w-full flex items-center-safe justify-center-safe">
+      <div className="w-full flex items-center-safe justify-center-safe overflow-hidden">
         <AnimatedLogo />
       </div>
       <div className="w-full flex flex-col items-center-safe justify-center-safe">

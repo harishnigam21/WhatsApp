@@ -48,12 +48,16 @@ interface initialStateType {
   Contacts: Contact[];
   activeContacts: ActiveContact[];
   cachedUrls: Record<string, string>;
+  selectedFor: boolean;
+  selectionFor: string[];
 }
 const initialState: initialStateType = {
   selectedContact: null,
   Contacts: [],
   activeContacts: [],
   cachedUrls: {},
+  selectedFor: false,
+  selectionFor: [],
 };
 const ChatSlice = createSlice({
   name: "chat",
@@ -292,6 +296,28 @@ const ChatSlice = createSlice({
       const payload = action.payload;
       state.cachedUrls = { ...state.cachedUrls, ...payload };
     },
+    setSelectedFor: (state, action: PayloadAction<boolean>) => {
+      state.selectedFor = action.payload;
+    },
+    setSelectionFor: (state, action: PayloadAction<string>) => {
+      const id = action.payload;
+
+      let deleted = false;
+      state.selectionFor = state.selectionFor.filter((item) => {
+        if (item == id) {
+          deleted = true;
+          return false;
+        } else {
+          return true;
+        }
+      });
+      if (!deleted) {
+        state.selectionFor.push(id);
+      }
+    },
+    clearSelectionFor: (state) => {
+      state.selectionFor = [];
+    },
   },
 });
 export const {
@@ -310,5 +336,8 @@ export const {
   markUserOnline,
   markSemiSeen,
   setCachedUrls,
+  setSelectedFor,
+  setSelectionFor,
+  clearSelectionFor,
 } = ChatSlice.actions;
 export default ChatSlice.reducer;

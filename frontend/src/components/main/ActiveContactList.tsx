@@ -75,7 +75,9 @@ export default function ActiveContactList({
                   <span>Attachments</span>
                 </div>
               ) : (
-                <span>{item.lastMessage.content}</span>
+                <span className="line-clamp-1 break-all">
+                  {item.lastMessage.content}
+                </span>
               )}
             </small>
           </div>
@@ -94,6 +96,7 @@ export default function ActiveContactList({
             )}
             <div
               className={`${options ? "flex" : "hidden"} group-hover:flex items-center relative`}
+              id="activecontactellipsis"
             >
               <ChevronDown
                 size={14}
