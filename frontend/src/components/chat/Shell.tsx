@@ -1,8 +1,10 @@
 "use client";
 import {
   clearSelectedContact,
+  clearSelectionFor,
   selectedContactType,
   setSelectedContact,
+  setSelectedFor,
 } from "@/redux/slices/ChatSlice";
 import { sendSocketRequest } from "@/redux/slices/SocketSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
@@ -21,6 +23,8 @@ export default function Shell({ dataChat }: { dataChat: selectedContactType }) {
       router.push("/");
     } else {
       dispatch(setSelectedContact(dataChat));
+      dispatch(setSelectedFor(false));
+      dispatch(clearSelectionFor());
     }
   }, [dispatch, dataChat]);
   useEffect(() => {

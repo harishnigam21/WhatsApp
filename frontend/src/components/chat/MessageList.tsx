@@ -56,7 +56,7 @@ export default function MessageList() {
       {Object.entries(messages).map(([date, msgs]) => (
         <div
           key={`selectedMessage/date/${date}`}
-          className="flex flex-col gap-1 w-full"
+          className="flex flex-col w-full"
         >
           <small className="bg-bgsec self-center sticky top-2 px-3 py-0.5 z-10 my-2 rounded-full">
             {formatRelativeDate(date)}
@@ -106,9 +106,9 @@ const MessageBody = ({
   }, [selectionFor]);
   return (
     <div
-      className={`w-full flex flex-nowrap gap-2 ${item.sender_id === userID && "justify-end"} ${selectedFor && "hover:bg-bgsec/70 active:bg-bgsec/70 cursor-pointer"} px-4 sm:px-8 lg:px-16`}
+      className={`w-full flex flex-nowrap gap-2 py-0.5 ${item.sender_id === userID && "justify-end"} ${selected && selectedFor && "bg-bgsec/70"} ${selectedFor && "hover:bg-bgsec/70 active:bg-bgsec/70 cursor-pointer"} px-4 sm:px-8 lg:px-16`}
       onClick={() => {
-        dispatch(setSelectionFor(item._id));
+        if (selectedFor) dispatch(setSelectionFor(item._id));
       }}
     >
       {selectedFor && (
@@ -116,9 +116,16 @@ const MessageBody = ({
           className={`${item.sender_id === userID && "grow"} flex items-center`}
         >
           <div
-            className={`size-4 border rounded-sm border-borderhl self-center cursor-pointer hover:border-txpri/50 active:border-txpri/50 flex items-center justify-center`}
+            className={`size-4 border rounded-sm border-borderhl self-center ${selected && "bg-pri"} cursor-pointer overflow-hidden hover:border-txpri/50 active:border-txpri/50 flex items-center justify-center transition-all`}
           >
-            {selected && <Check />}
+            {selected && (
+              <Check
+                color="black"
+                strokeWidth={3}
+                size={12}
+                className="mt-0.5"
+              />
+            )}
           </div>
         </div>
       )}
