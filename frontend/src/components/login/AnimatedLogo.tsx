@@ -32,7 +32,7 @@ export default function AnimatedLogo() {
   }, [showLogo]);
 
   return (
-    <div className="relative flex items-center justify-center w-full h-full select-none">
+    <div className="relative flex items-center justify-center w-90 h-90 rounded-xl select-none">
       {!showLogo ? (
         <div className="">
           <AnimatePresence mode="wait">

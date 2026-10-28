@@ -23,7 +23,7 @@ export default function Welcome({
       <div className="w-full flex items-center-safe justify-center-safe overflow-hidden">
         <AnimatedLogo />
       </div>
-      <div className="w-full flex flex-col items-center-safe justify-center-safe">
+      <div className="w-full flex flex-col items-center-safe justify-center-safe -mt-30 md:mt-0">
         <style>{`span {cursor:pointer;white-space: nowrap;}`}</style>
         <h3 className="text-3xl sm:text-4xl mb-8 text-center">
           Welcome to WhatsApp
