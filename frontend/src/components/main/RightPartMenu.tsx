@@ -40,7 +40,7 @@ export default function RightPartMenu({
   return (
     <ol
       ref={optionRef}
-      className="absolute z-10 top-12 right-0 gap-1 flex flex-col bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_40%)] max-w-fit p-1 whitespace-nowrap line-clamp-1 rounded-lg border border-borderhl/40 font-medium"
+      className="absolute z-20 top-12 right-0 gap-1 flex flex-col bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_40%)] max-w-fit p-1 whitespace-nowrap line-clamp-1 rounded-lg border border-borderhl/40 font-medium"
     >
       {optionItem.map((item, i) => (
         <li

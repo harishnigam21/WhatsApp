@@ -40,7 +40,7 @@ export default function AttachItems({
     return (
       <ol
         ref={attachRef}
-        className="absolute bottom-1 left-0 bg-[color-mix(in_srgb,var(--color-bgpri)_60%,var(--color-bgsec)_100%)] border border-borderhl/40 rounded-xl flex flex-col p-1"
+        className="absolute bottom-1 left-0 z-20 bg-[color-mix(in_srgb,var(--color-bgpri)_60%,var(--color-bgsec)_100%)] border border-borderhl/40 rounded-xl flex flex-col p-1"
       >
         {[
           {

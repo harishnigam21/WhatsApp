@@ -106,6 +106,11 @@ const MessageBody = ({
   }, [selectionFor]);
   return (
     <div
+      onContextMenu={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setOptions(true);
+      }}
       className={`w-full flex flex-nowrap gap-2 py-0.5 ${item.sender_id === userID && "justify-end"} ${selected && selectedFor && "bg-bgsec/70"} ${selectedFor && "hover:bg-bgsec/70 active:bg-bgsec/70 cursor-pointer"} px-4 sm:px-8 lg:px-16`}
       onClick={() => {
         if (selectedFor) dispatch(setSelectionFor(item._id));
@@ -131,11 +136,6 @@ const MessageBody = ({
       )}
       <div
         ref={messageRef}
-        onContextMenu={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          setOptions(true);
-        }}
         id={`message/${item._id}`}
         className={`relative group rounded-md flex flex-col flex-nowrap items-center max-w-8/10 ${
           item.sender_id === userID
