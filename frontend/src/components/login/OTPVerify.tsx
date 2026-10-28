@@ -117,10 +117,10 @@ export default function OTPVerify({
             <input
               value={item}
               key={`otp-fields/${i}`}
-              type="text"
+              type="number"
               name={`otp-fields/${i}`}
               id={`otp-fields/${i}`}
-              className={`outline-none focus:outline-none border ${selectedOTPblock == i ? "focus:border-pri border-borderhl" : "border-borderhl focus:border-borderhl"} rounded-md p-1 text-xl size-10 ${i == 2 && "mr-3"} text-center`}
+              className={`outline-none focus:outline-none border ${selectedOTPblock == i ? "focus:border-pri border-borderhl" : "border-borderhl focus:border-borderhl"} rounded-md p-1 text-xl size-10 ${i == 2 && "mr-3"} text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
               placeholder="-"
               required
               onClick={() => {
