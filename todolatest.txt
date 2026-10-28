@@ -1,3 +1,0 @@
-login page icons big and small
-while receiving make input field type number so that keyboard don't switch to alphabet due to type text
-increase attachment menu z index.
