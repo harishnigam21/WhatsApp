@@ -111,12 +111,16 @@ export default function Main() {
   // Setup reCAPTCHA container
   const setupRecaptcha = async (): Promise<RecaptchaVerifier> => {
     if (!window.recaptchaVerifier) {
-      const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-        size: "invisible",
-        callback: () => {
-          console.log("reCAPTCHA solved");
+      const verifier = new RecaptchaVerifier(
+        "recaptcha-container",
+        {
+          size: "invisible",
+          callback: () => {
+            console.log("reCAPTCHA solved");
+          },
         },
-      });
+        auth,
+      );
       window.recaptchaVerifier = verifier;
     }
     await window.recaptchaVerifier.render();
@@ -200,7 +204,6 @@ export default function Main() {
     formData.append("bio", Bio);
     await saveInfoRequest("api/users/new", "POST", formData)
       .then(async (result) => {
-        console.log(result);
         if (result && result.success) {
           const responseData = result.data as {
             tk: string;

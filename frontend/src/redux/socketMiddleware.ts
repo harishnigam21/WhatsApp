@@ -181,7 +181,6 @@ export const socketMiddleware: Middleware =
             break;
           }
           case "seenAll": {
-            console.log("Sending request for seenAll");
             const eventResponse = response.seenAll;
             if (!eventResponse) return;
             if (eventResponse.success && eventResponse.allSeenOf) {
