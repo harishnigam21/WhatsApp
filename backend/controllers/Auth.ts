@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { CookieOptions, Request, Response } from "express";
 import { sendOTP, validatePhoneNumber, verifyOTP } from "../utils/twilio";
 import { getServerError } from "../utils/serverError";
 import jwt from "jsonwebtoken";
@@ -93,20 +93,8 @@ export const verifyOTPCon = async (req: Request, res: Response) => {
       },
       { returnDocument: "after", runValidators: true },
     );
-    res.cookie("actk", access_token, {
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
-      secure: in_production,
-      sameSite: in_production ? "none" : "lax",
-      domain: process.env.TOP_DOMAIN,
-    });
-    res.cookie("jwt", refresh_token, {
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      secure: in_production,
-      sameSite: in_production ? "none" : "lax",
-      domain: process.env.TOP_DOMAIN,
-    });
+    res.cookie("actk", access_token, cookieOptions(24 * 60 * 60 * 1000));
+    res.cookie("jwt", refresh_token, cookieOptions(7 * 24 * 60 * 60 * 1000));
     await redisConnect.set(
       `WhatsAppUserInfo-${updateRefreshToken!._id.toString()}`,
       JSON.stringify(updateRefreshToken),
@@ -177,20 +165,8 @@ export const Login = async (req: Request, res: Response) => {
       },
       { returnDocument: "after", runValidators: true },
     );
-    res.cookie("actk", access_token, {
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
-      secure: in_production,
-      sameSite: in_production ? "none" : "lax",
-      domain: process.env.TOP_DOMAIN,
-    });
-    res.cookie("jwt", refresh_token, {
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      secure: in_production,
-      sameSite: in_production ? "none" : "lax",
-      domain: process.env.TOP_DOMAIN,
-    });
+    res.cookie("actk", access_token, cookieOptions(24 * 60 * 60 * 1000));
+    res.cookie("jwt", refresh_token, cookieOptions(7 * 24 * 60 * 60 * 1000));
     await redisConnect.set(
       `WhatsAppUserInfo-${updateRefreshToken!._id.toString()}`,
       JSON.stringify(updateRefreshToken),
@@ -222,22 +198,18 @@ export const Login = async (req: Request, res: Response) => {
     });
   }
 };
-
+const cookieOptions = (expires: number): CookieOptions => {
+  return {
+    httpOnly: in_production,
+    maxAge: expires,
+    secure: in_production,
+    sameSite: in_production ? "none" : "lax",
+    domain: process.env.TOP_DOMAIN,
+  };
+};
 const handleClearCookies = (res: Response) => {
-  res.clearCookie("jwt", {
-    httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    secure: in_production,
-    sameSite: in_production ? "none" : "lax",
-    domain: process.env.TOP_DOMAIN,
-  });
-  res.clearCookie("actk", {
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    secure: in_production,
-    sameSite: in_production ? "none" : "lax",
-    domain: process.env.TOP_DOMAIN,
-  });
+  res.clearCookie("jwt", cookieOptions(7 * 24 * 60 * 60 * 1000));
+  res.clearCookie("actk", cookieOptions(24 * 60 * 60 * 1000));
 };
 
 export const handleRefresh = async (req: Request, res: Response) => {
@@ -266,13 +238,7 @@ export const handleRefresh = async (req: Request, res: Response) => {
           process.env.ACCESS_TOKEN_KEY as string,
           { expiresIn: "1d" },
         );
-        res.cookie("actk", access_token, {
-          httpOnly: true,
-          maxAge: 24 * 60 * 60 * 1000,
-          secure: in_production,
-          sameSite: in_production ? "none" : "lax",
-          domain: process.env.TOP_DOMAIN,
-        });
+        res.cookie("actk", access_token, cookieOptions(24 * 60 * 60 * 1000));
         return res.status(200).json({ actk: access_token });
       },
     );
