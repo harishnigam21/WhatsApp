@@ -13,6 +13,7 @@ import {
   MessageType,
 } from "./slices/ChatSlice";
 import toast from "react-hot-toast";
+import { setLoginStatus } from "./slices/UserSlice";
 
 export let socket: Socket | null = null;
 
@@ -20,7 +21,8 @@ export const socketMiddleware: Middleware =
   (store) => (next) => (action: any) => {
     if (action.type === "socket/connect") {
       const userId = action.payload;
-      if (!socket && userId) {
+      if (!userId) return next(action);
+      if (!socket) {
         socket = io(process.env.NEXT_PUBLIC_BACKEND_HOST, {
           withCredentials: true,
           autoConnect: true,
@@ -114,11 +116,18 @@ export const socketMiddleware: Middleware =
         });
         socket.on("connect_error", (error) => {
           console.error("Socket connection error:", error.message);
+          if (error.message === "Unauthorized") {
+            store.dispatch(setConnectionStatus(false));
+            store.dispatch(setLoginStatus("unauthenticated"));
+          }
         });
         socket.on("disconnect", (reason) => {
           console.log("Socket disconnected:", reason);
           store.dispatch(setConnectionStatus(false));
         });
+      }
+      if (!socket.connected) {
+        socket.connect();
       }
     }
 

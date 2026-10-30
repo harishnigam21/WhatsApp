@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { jwtVerify } from "jose";
 import type { NextRequest } from "next/server";
-
 const in_production = process.env.NEXT_PUBLIC_IN_PRODUCTION === "true";
 export async function middleware(request: NextRequest) {
   const actk = request.cookies.get("actk")?.value;
@@ -8,7 +8,7 @@ export async function middleware(request: NextRequest) {
 
   let response = NextResponse.next();
 
-  if (!actk && jwt) {
+  if (!(await isAccessTokenValid(actk)) && jwt) {
     try {
       const refreshRes = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_HOST}/api/auth/refresh`,
@@ -25,24 +25,26 @@ export async function middleware(request: NextRequest) {
         const refreshData = await refreshRes.json();
 
         const cookieOptions = {
-          httpOnly: true,
+          httpOnly: in_production,
           maxAge: 24 * 60 * 60, // maxAge in middleware is in SECONDS, not milliseconds
           secure: in_production,
           sameSite: (in_production ? "none" : "lax") as "none" | "lax",
-          domain: process.env.TOP_DOMAIN,
+          domain: process.env.NEXT_PUBLIC_TOP_DOMAIN,
           path: "/",
         };
-
-        response.cookies.set("actk", refreshData.actk, cookieOptions);
         request.cookies.set("actk", refreshData.actk);
+
+        const requestHeaders = new Headers(request.headers);
+        requestHeaders.set("Cookie", request.cookies.toString());
 
         response = NextResponse.next({
           request: {
-            headers: request.headers,
+            headers: requestHeaders,
           },
         });
 
         response.cookies.set("actk", refreshData.actk, cookieOptions);
+        
       } else {
         const redirectResponse = NextResponse.redirect(
           new URL("/login", request.url),
@@ -70,6 +72,20 @@ const clearAuthCookies = (response: NextResponse) => {
   response.cookies.set("jwt", "", options);
 
   return response;
+};
+const isAccessTokenValid = async (token?: string) => {
+  if (!token) return false;
+
+  try {
+    await jwtVerify(
+      token,
+      new TextEncoder().encode(process.env.ACCESS_TOKEN_KEY!),
+    );
+
+    return true;
+  } catch {
+    return false;
+  }
 };
 // Ensure this runs on your page routes, but skips static files/images
 export const config = {
