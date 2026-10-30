@@ -223,6 +223,23 @@ export const Login = async (req: Request, res: Response) => {
   }
 };
 
+const handleClearCookies = (res: Response) => {
+  res.clearCookie("jwt", {
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    secure: in_production,
+    sameSite: in_production ? "none" : "lax",
+    domain: process.env.TOP_DOMAIN,
+  });
+  res.clearCookie("actk", {
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000,
+    secure: in_production,
+    sameSite: in_production ? "none" : "lax",
+    domain: process.env.TOP_DOMAIN,
+  });
+};
+
 export const handleRefresh = async (req: Request, res: Response) => {
   try {
     const cookies = req.cookies;
@@ -232,20 +249,7 @@ export const handleRefresh = async (req: Request, res: Response) => {
       .select("+refreshToken +_id")
       .lean();
     if (!findUser) {
-      res.clearCookie("jwt", {
-        httpOnly: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        secure: in_production,
-        sameSite: in_production ? "none" : "lax",
-        domain: process.env.TOP_DOMAIN,
-      });
-      res.clearCookie("actk", {
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000,
-        secure: in_production,
-        sameSite: in_production ? "none" : "lax",
-        domain: process.env.TOP_DOMAIN,
-      });
+      handleClearCookies(res);
       return res.status(401).json({ message: "You are not authorized !" });
     }
     const { refreshToken, ...other } = findUser;
@@ -253,8 +257,10 @@ export const handleRefresh = async (req: Request, res: Response) => {
       findUser.refreshToken,
       process.env.REFRESH_TOKEN_KEY as string,
       (err: jwt.VerifyErrors | null, decoded: any) => {
-        if (err || findUser._id != decoded.id)
+        if (err || findUser._id != decoded.id) {
+          handleClearCookies(res);
           return res.status(403).json({ status: false });
+        }
         const access_token = jwt.sign(
           { id: decoded.id },
           process.env.ACCESS_TOKEN_KEY as string,

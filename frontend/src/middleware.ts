@@ -46,7 +46,12 @@ export async function middleware(request: NextRequest) {
 
         response.cookies.set("actk", refreshData.actk, cookieOptions);
       } else {
-        return NextResponse.redirect(new URL("/login", request.url));
+        const redirectResponse = NextResponse.redirect(
+          new URL("/login", request.url),
+        );
+        redirectResponse.cookies.delete("actk");
+        redirectResponse.cookies.delete("jwt");
+        return redirectResponse;
       }
     } catch (error) {
       console.error("Middleware refresh failed:", error);
