@@ -212,7 +212,7 @@ const clearCookieOptions: CookieOptions = {
   httpOnly: in_production,
   secure: in_production,
   sameSite: in_production ? "none" : "lax",
-  domain: in_production ? process.env.TOP_DOMAIN : undefined,
+  domain: process.env.TOP_DOMAIN,
   path: "/",
 };
 const handleClearCookies = (res: Response) => {

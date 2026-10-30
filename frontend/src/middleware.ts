@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const in_production = process.env.NEXT_PUBLIC_IN_PRODUCTION === "true";
 export async function middleware(request: NextRequest) {
-  const in_production = process.env.NEXT_PUBLIC_IN_PRODUCTION === "true";
-
   const actk = request.cookies.get("actk")?.value;
   const jwt = request.cookies.get("jwt")?.value;
 
@@ -22,7 +21,6 @@ export async function middleware(request: NextRequest) {
           cache: "no-store",
         },
       );
-      console.log(refreshRes);
       if (refreshRes.ok) {
         const refreshData = await refreshRes.json();
 
@@ -49,9 +47,7 @@ export async function middleware(request: NextRequest) {
         const redirectResponse = NextResponse.redirect(
           new URL("/login", request.url),
         );
-        redirectResponse.cookies.delete("actk");
-        redirectResponse.cookies.delete("jwt");
-        return redirectResponse;
+        return clearAuthCookies(redirectResponse);
       }
     } catch (error) {
       console.error("Middleware refresh failed:", error);
@@ -60,7 +56,21 @@ export async function middleware(request: NextRequest) {
 
   return response;
 }
+const clearAuthCookies = (response: NextResponse) => {
+  const options = {
+    httpOnly: in_production,
+    secure: in_production,
+    sameSite: in_production ? ("none" as const) : ("lax" as const),
+    domain: process.env.NEXT_PUBLIC_TOP_DOMAIN || undefined,
+    path: "/",
+    expires: new Date(0),
+  };
 
+  response.cookies.set("actk", "", options);
+  response.cookies.set("jwt", "", options);
+
+  return response;
+};
 // Ensure this runs on your page routes, but skips static files/images
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
