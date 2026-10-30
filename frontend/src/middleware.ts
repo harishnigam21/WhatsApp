@@ -22,7 +22,7 @@ export async function middleware(request: NextRequest) {
           cache: "no-store",
         },
       );
-
+      console.log(refreshRes);
       if (refreshRes.ok) {
         const refreshData = await refreshRes.json();
 

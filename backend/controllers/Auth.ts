@@ -205,18 +205,28 @@ const cookieOptions = (expires: number): CookieOptions => {
     secure: in_production,
     sameSite: in_production ? "none" : "lax",
     domain: process.env.TOP_DOMAIN,
+    path: "/",
   };
 };
+const clearCookieOptions: CookieOptions = {
+  httpOnly: in_production,
+  secure: in_production,
+  sameSite: in_production ? "none" : "lax",
+  domain: in_production ? process.env.TOP_DOMAIN : undefined,
+  path: "/",
+};
 const handleClearCookies = (res: Response) => {
-  res.clearCookie("jwt", cookieOptions(7 * 24 * 60 * 60 * 1000));
-  res.clearCookie("actk", cookieOptions(24 * 60 * 60 * 1000));
+  res.clearCookie("jwt", clearCookieOptions);
+  res.clearCookie("actk", clearCookieOptions);
 };
 
 export const handleRefresh = async (req: Request, res: Response) => {
   try {
     const cookies = req.cookies;
-    if (!cookies?.jwt)
+    if (!cookies?.jwt) {
+      handleClearCookies(res);
       return res.status(401).json({ message: "Cookie missing" });
+    }
     const findUser = await User.findOne({ refreshToken: cookies.jwt })
       .select("+refreshToken +_id")
       .lean();
