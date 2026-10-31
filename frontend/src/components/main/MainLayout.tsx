@@ -11,7 +11,9 @@ export default function MainLayout({
 }) {
   const dispatch = useAppDispatch();
   const swidth = useAppSelector((store) => store.layout.screenSize.width);
-  const selectedContact = useAppSelector((store) => store.chat.selectedContact);
+  const { selectedContact, selectedContactLoading } = useAppSelector(
+    (store) => store.chat,
+  );
   const [sidebarpop, setSidebarPop] = useState<boolean>(false);
   useEffect(() => {
     let layout;
@@ -39,6 +41,17 @@ export default function MainLayout({
 
     dispatch(updateMainLayout(layout));
   }, [swidth, selectedContact, dispatch]);
+  useEffect(() => {
+    if (swidth <= 768) {
+      dispatch(
+        updateMainLayout({
+          sidebar: false,
+          leftpart: false,
+          rightpart: true,
+        }),
+      );
+    }
+  }, [selectedContactLoading]);
   useEffect(() => {
     setSidebarPop(false);
   }, [swidth]);

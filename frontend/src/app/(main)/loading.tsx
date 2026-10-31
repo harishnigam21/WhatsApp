@@ -28,7 +28,7 @@ export default function Loading() {
         </div>
       </div>
       {/* body */}
-      <div className="grow py-2 px-16 flex flex-col justify-end">
+      <div className="grow py-2 px-4 md:px:16 flex flex-col justify-end">
         {Array.from({ length: 10 }).map((item, i) => (
           <div
             key={`skeleton/message/${i}`}

@@ -45,6 +45,7 @@ export interface selectedContactType {
 }
 interface initialStateType {
   selectedContact: selectedContactType | null;
+  selectedContactLoading: boolean;
   Contacts: Contact[];
   activeContacts: ActiveContact[];
   cachedUrls: Record<string, string>;
@@ -53,6 +54,7 @@ interface initialStateType {
 }
 const initialState: initialStateType = {
   selectedContact: null,
+  selectedContactLoading: false,
   Contacts: [],
   activeContacts: [],
   cachedUrls: {},
@@ -65,6 +67,9 @@ const ChatSlice = createSlice({
   reducers: {
     setSelectedContact: (state, action: PayloadAction<selectedContactType>) => {
       state.selectedContact = action.payload;
+    },
+    setSelectedContactLoading: (state, action: PayloadAction<boolean>) => {
+      state.selectedContactLoading = action.payload;
     },
     clearSelectedContact: (state) => {
       state.selectedContact = null;
@@ -322,6 +327,7 @@ const ChatSlice = createSlice({
 });
 export const {
   setSelectedContact,
+  setSelectedContactLoading,
   clearSelectedContact,
   setContact,
   addContact,

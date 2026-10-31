@@ -1,4 +1,7 @@
-import { ActiveContact } from "@/redux/slices/ChatSlice";
+import {
+  ActiveContact,
+  setSelectedContactLoading,
+} from "@/redux/slices/ChatSlice";
 import { User } from "@/redux/slices/UserSlice";
 import { shortTimestamp } from "@/utils/dateFormats";
 import { Check, CheckCheck, ChevronDown, Paperclip } from "lucide-react";
@@ -28,14 +31,7 @@ export default function ActiveContactList({
     <div
       className="px-2 w-full"
       onClick={() => {
-        if (swidth <= 768)
-          dispatch(
-            updateMainLayout({
-              sidebar: false,
-              leftpart: false,
-              rightpart: true,
-            }),
-          );
+        dispatch(setSelectedContactLoading(true));
         router.push(`/c=${item?._id}`);
       }}
       onContextMenu={(e) => {

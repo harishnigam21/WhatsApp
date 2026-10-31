@@ -1,6 +1,6 @@
 "use client";
 
-import { useAppSelector } from "@/redux/Store";
+import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import {
   Archive,
   ArrowLeft,
@@ -18,6 +18,7 @@ import { MdGroupAdd, MdGroups, MdPersonAddAlt1 } from "react-icons/md";
 import ActiveContactList from "./ActiveContactList";
 import LeftPartMenu from "./LeftPartMenu";
 import { BiSolidCommentAdd } from "react-icons/bi";
+import { setSelectedContactLoading } from "@/redux/slices/ChatSlice";
 
 export default function LeftPart({
   sidebarpop,
@@ -34,6 +35,7 @@ export default function LeftPart({
   const mainLayout = useAppSelector((store) => store.layout.mainLayout);
   const [options, setOptions] = useState<boolean>(false);
   const router = useRouter();
+  const dispatch = useAppDispatch();
   return (
     <section
       className={`${mainLayout.leftpart ? `relative ${!mainLayout.rightpart ? "w-full" : "min-w-90 lg:min-w-115"} min-h-full bg-bgsec/40 border-r border-borderhl/40 z-30 flex flex-col` : "hidden"}`}
@@ -103,6 +105,7 @@ export default function LeftPart({
           <div
             className="flex p-3 gap-4 rounded-xl items-center cursor-pointer hover:bg-bgsec active:bg-bgsec transition-all"
             onClick={() => {
+              dispatch(setSelectedContactLoading(true));
               router.push(`/c=${user?._id}`);
               setShowContact(false);
             }}
@@ -135,6 +138,7 @@ export default function LeftPart({
             <div
               key={`contact/other/${i}`}
               onClick={() => {
+                dispatch(setSelectedContactLoading(true));
                 router.push(`/c=${item._id}`);
                 setShowContact(false);
               }}

@@ -1,6 +1,6 @@
 "use client";
 
-import { clearSelectedContact } from "@/redux/slices/ChatSlice";
+import { clearSelectedContact, setSelectedContactLoading } from "@/redux/slices/ChatSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import {
   Bot,

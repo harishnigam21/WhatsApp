@@ -44,7 +44,6 @@ export async function middleware(request: NextRequest) {
         });
 
         response.cookies.set("actk", refreshData.actk, cookieOptions);
-        
       } else {
         const redirectResponse = NextResponse.redirect(
           new URL("/login", request.url),
@@ -53,6 +52,10 @@ export async function middleware(request: NextRequest) {
       }
     } catch (error) {
       console.error("Middleware refresh failed:", error);
+      const redirectResponse = NextResponse.redirect(
+        new URL("/login", request.url),
+      );
+      return clearAuthCookies(redirectResponse);
     }
   }
 

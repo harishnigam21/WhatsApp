@@ -39,6 +39,7 @@ import {
   clearSelectionFor,
   MessageType,
   setCachedUrls,
+  setSelectedContactLoading,
   setSelectedFor,
   setSelectionFor,
 } from "@/redux/slices/ChatSlice";
@@ -797,10 +798,10 @@ export const NoChatSelection = () => {
   const [phone, setPhone] = useState<boolean>(false);
   const mainLayout = useAppSelector((store) => store.layout.mainLayout);
   const [mounted, setMounted] = useState(false);
-  const selectedContact = useAppSelector((store) => store.chat.selectedContact);
-  if (selectedContact) {
-    return null;
-  }
+  const { selectedContact, selectedContactLoading } = useAppSelector(
+    (store) => store.chat,
+  );
+
   useEffect(() => {
     setMounted(true);
 
@@ -810,6 +811,13 @@ export const NoChatSelection = () => {
 
     return () => clearInterval(timer);
   }, []);
+
+  if (selectedContactLoading) {
+    return <Loading />;
+  }
+  if (selectedContact) {
+    return null;
+  }
   return (
     mounted && (
       <section
