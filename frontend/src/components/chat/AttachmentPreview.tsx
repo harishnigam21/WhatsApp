@@ -103,7 +103,7 @@ export const FilePreview = ({ item }: { item: FileItemType }) => {
           loading="lazy"
           width={10}
           height={10}
-          className="w-fit h-fit max-w-full max-h-full min-w-20 object-contain object-center p-2"
+          className="w-fit h-fit max-w-full max-h-full min-w-20 object-contain object-center p-2 aspect-square"
         />
       </div>
     ) : item?.type.toLowerCase().includes("pdf") ? (
