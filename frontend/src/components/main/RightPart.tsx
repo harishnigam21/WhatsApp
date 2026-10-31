@@ -50,6 +50,7 @@ import { updateMainLayout } from "@/redux/slices/LayoutSlice";
 import { useRouter } from "next/navigation";
 import { formatBytes } from "@/utils/formatBytes";
 import RightPartMenu from "./RightPartMenu";
+import Loading from "@/app/(main)/loading";
 
 export default function RightPart({
   children,
@@ -540,7 +541,7 @@ export default function RightPart({
           {/* chat area */}
           <article
             ref={MessageAreaRef}
-            className=" grow overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-borderhl h-10 flex flex-col justify-end-safe"
+            className="grow overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-borderhl h-10 flex flex-col justify-end-safe"
           >
             {children}
           </article>
@@ -795,121 +796,134 @@ export const renderFileIcon = (file: File, size?: number) => {
 export const NoChatSelection = () => {
   const [phone, setPhone] = useState<boolean>(false);
   const mainLayout = useAppSelector((store) => store.layout.mainLayout);
-
+  const [mounted, setMounted] = useState(false);
+  const selectedContact = useAppSelector((store) => store.chat.selectedContact);
+  if (selectedContact) {
+    return null;
+  }
   useEffect(() => {
+    setMounted(true);
+
     const timer = setInterval(() => {
       setPhone((prev) => !prev);
     }, 2000);
-    return () => {
-      clearInterval(timer);
-    };
+
+    return () => clearInterval(timer);
   }, []);
   return (
-    <section
-      className={`${mainLayout.rightpart ? "w-full grow flex flex-col items-center justify-center bg-[color-mix(in_srgb,var(--color-bgpri)_10%,var(--color-bgsec)_100%)]" : "hidden"}`}
-    >
-      <div className="w-87 rounded-2xl p-4 flex flex-col items-center bg-bgpri/25">
-        <div className="w-50 h-35 mb-8">
-          <svg
-            xmlns="http://w3.org"
-            viewBox="0 0 400 200"
-            width="100%"
-            height="100%"
-          >
-            <defs>
-              <clipPath id="popup-clip">
-                <rect x="110" y="44" width="220" height="144" rx="14" ry="14" />
-              </clipPath>
-            </defs>
-
-            <g
-              stroke="#0E1E14"
-              strokeWidth="3"
-              strokeLinejoin="round"
-              strokeLinecap="round"
+    mounted && (
+      <section
+        className={`${mainLayout.rightpart ? "w-full grow flex flex-col items-center justify-center bg-[color-mix(in_srgb,var(--color-bgpri)_10%,var(--color-bgsec)_100%)]" : "hidden"}`}
+      >
+        <div className="w-87 rounded-2xl p-4 flex flex-col items-center bg-bgpri/25">
+          <div className="w-50 h-35 mb-8">
+            <svg
+              xmlns="http://w3.org"
+              viewBox="0 0 400 200"
+              width="100%"
+              height="100%"
             >
-              <rect
-                x="80"
-                y="65"
-                width="216"
-                height="135"
-                rx="14"
-                ry="14"
-                fill="#E3F9EC"
-              />
+              <defs>
+                <clipPath id="popup-clip">
+                  <rect
+                    x="110"
+                    y="44"
+                    width="220"
+                    height="144"
+                    rx="14"
+                    ry="14"
+                  />
+                </clipPath>
+              </defs>
 
-              <path
-                d="M 60,200 L 340,200 C 340,200 335,216 320,216 L 80,216 C 65,216 60,200 60,200 Z"
-                fill="#E3F9EC"
-              />
+              <g
+                stroke="#0E1E14"
+                strokeWidth="3"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              >
+                <rect
+                  x="80"
+                  y="65"
+                  width="216"
+                  height="135"
+                  rx="14"
+                  ry="14"
+                  fill="#E3F9EC"
+                />
 
-              <path
-                d="M 158,200 L 242,200 L 234,208 L 166,208 Z"
-                fill="#BCEAD0"
-              />
-            </g>
+                <path
+                  d="M 60,200 L 340,200 C 340,200 335,216 320,216 L 80,216 C 65,216 60,200 60,200 Z"
+                  fill="#E3F9EC"
+                />
 
-            <rect
-              x="110"
-              y="44"
-              width="220"
-              height="144"
-              rx="14"
-              ry="14"
-              fill="#FDF7F2"
-              stroke="#0E1E14"
-              strokeWidth="3.5"
-            />
+                <path
+                  d="M 158,200 L 242,200 L 234,208 L 166,208 Z"
+                  fill="#BCEAD0"
+                />
+              </g>
 
-            <g clipPath="url(#popup-clip)">
               <rect
                 x="110"
                 y="44"
-                width="72"
+                width="220"
                 height="144"
-                fill="#20D663"
+                rx="14"
+                ry="14"
+                fill="#FDF7F2"
                 stroke="#0E1E14"
                 strokeWidth="3.5"
               />
-              <path
-                d="M 122,56 L 130,64 M 130,56 L 122,64"
-                stroke="#0E1E14"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-              <line
-                x1="126"
-                y1="94"
-                x2="168"
-                y2="94"
-                stroke="#0E1E14"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-              />
-              <line
-                x1="126"
-                y1="112"
-                x2="168"
-                y2="112"
-                stroke="#0E1E14"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-              />
-              <line
-                x1="126"
-                y1="130"
-                x2="168"
-                y2="130"
-                stroke="#0E1E14"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-              />
-              {/* Centered phone handset icon */}
-              <g
-                className={`${phone ? "scale-50" : "scale-0"} translate-x-33 translate-y-12 transition-all`}
-              >
+
+              <g clipPath="url(#popup-clip)">
+                <rect
+                  x="110"
+                  y="44"
+                  width="72"
+                  height="144"
+                  fill="#20D663"
+                  stroke="#0E1E14"
+                  strokeWidth="3.5"
+                />
                 <path
-                  d="M 207 75
+                  d="M 122,56 L 130,64 M 130,56 L 122,64"
+                  stroke="#0E1E14"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="126"
+                  y1="94"
+                  x2="168"
+                  y2="94"
+                  stroke="#0E1E14"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="126"
+                  y1="112"
+                  x2="168"
+                  y2="112"
+                  stroke="#0E1E14"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="126"
+                  y1="130"
+                  x2="168"
+                  y2="130"
+                  stroke="#0E1E14"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                />
+                {/* Centered phone handset icon */}
+                <g
+                  className={`${phone ? "scale-50" : "scale-0"} translate-x-33 translate-y-12 transition-all`}
+                >
+                  <path
+                    d="M 207 75
      C 200 75 195 80 195 87
      C 195 111 211 135 229 153
      C 247 171 271 181 295 181
@@ -925,68 +939,69 @@ export const NoChatSelection = () => {
      L 240 86
      C 240 79 236 75 229 75
      Z"
-                  fill="#20D663"
+                    fill="#20D663"
+                    stroke="#0E1E14"
+                    strokeWidth="3.5"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  />
+                </g>
+                {/* Centered video camera icon */}
+                <g
+                  className={`${phone ? "scale-0" : "scale-70"} translate-x-25 translate-y-8 transition-all`}
                   stroke="#0E1E14"
                   strokeWidth="3.5"
                   strokeLinejoin="round"
                   strokeLinecap="round"
-                />
-              </g>
-              {/* Centered video camera icon */}
-              <g
-                className={`${phone ? "scale-0" : "scale-70"} translate-x-25 translate-y-8 transition-all`}
-                stroke="#0E1E14"
-                strokeWidth="3.5"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              >
-                {/* Camera body */}
-                <rect
-                  x="183"
-                  y="91"
-                  width="58"
-                  height="48"
-                  rx="8"
-                  fill="#20D663"
-                />
+                >
+                  {/* Camera body */}
+                  <rect
+                    x="183"
+                    y="91"
+                    width="58"
+                    height="48"
+                    rx="8"
+                    fill="#20D663"
+                  />
 
-                {/* Camera lens / side */}
-                <path
-                  d="M 241 104 L 263 91 Q 268 89 268 96 L 268 134 Q 268 141 263 138 L 241 126 Z"
-                  fill="#20D663"
-                />
+                  {/* Camera lens / side */}
+                  <path
+                    d="M 241 104 L 263 91 Q 268 89 268 96 L 268 134 Q 268 141 263 138 L 241 126 Z"
+                    fill="#20D663"
+                  />
+                </g>
               </g>
-            </g>
-          </svg>
-        </div>
-        <p className="text-xl text-center">
-          Voice and video calling is now available
-        </p>
-        <small className="text-txpri/75 text-[14px] text-center mt-1">
-          Now you can make and join calls on WhatsApp Web.
-        </small>
-        <button className="bg-pri/50 rounded-full py-1 px-3 text-sm font-medium tracking-tighter mt-6 cursor-pointer">
-          Go to Calls
-        </button>
-      </div>
-      <div className="w-87 mt-6 flex gap-1 justify-between">
-        {[
-          { name: "Send Document", icon: FileText },
-          { name: "Add Contact", icon: UserPlus },
-          { name: "New Call", icon: Phone },
-          { name: "Ask AI", icon: Bot },
-        ].map((item, i) => (
-          <div
-            key={`noselection/right/icon/${i}`}
-            className="flex flex-col justify-center items-center gap-1"
-          >
-            <div className="hover:bg-borderhl/75 active:bg-borderhl/75 bg-borderhl/40 rounded-full py-3 px-4 cursor-pointer transition-all">
-              <item.icon className="" size={20} />
-            </div>
-            <small>{item.name}</small>
+            </svg>
           </div>
-        ))}
-      </div>
-    </section>
+          <p className="text-xl text-center">
+            Voice and video calling is now available
+          </p>
+          <small className="text-txpri/75 text-[14px] text-center mt-1">
+            Now you can make and join calls on WhatsApp Web.
+          </small>
+          <button className="bg-pri/50 rounded-full py-1 px-3 text-sm font-medium tracking-tighter mt-6 cursor-pointer">
+            Go to Calls
+          </button>
+        </div>
+        <div className="w-87 mt-6 flex gap-1 justify-between">
+          {[
+            { name: "Send Document", icon: FileText },
+            { name: "Add Contact", icon: UserPlus },
+            { name: "New Call", icon: Phone },
+            { name: "Ask AI", icon: Bot },
+          ].map((item, i) => (
+            <div
+              key={`noselection/right/icon/${i}`}
+              className="flex flex-col justify-center items-center gap-1"
+            >
+              <div className="hover:bg-borderhl/75 active:bg-borderhl/75 bg-borderhl/40 rounded-full py-3 px-4 cursor-pointer transition-all">
+                <item.icon className="" size={20} />
+              </div>
+              <small>{item.name}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+    )
   );
 };

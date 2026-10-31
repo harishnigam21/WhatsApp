@@ -2,8 +2,6 @@ import { serverFetch } from "@/utils/serverApi";
 import "../globals.css";
 import { User } from "@/redux/slices/UserSlice";
 import MainLayoutData from "@/components/main/MainLayoutData";
-import SideBar from "@/components/main/SideBar";
-import LeftPart from "@/components/main/LeftPart";
 import { ActiveContact, Contact } from "@/redux/slices/ChatSlice";
 import MainLayout from "@/components/main/MainLayout";
 import ScreenSize from "@/components/ScreenSize";

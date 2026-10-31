@@ -14,61 +14,30 @@ export default function MainLayout({
   const selectedContact = useAppSelector((store) => store.chat.selectedContact);
   const [sidebarpop, setSidebarPop] = useState<boolean>(false);
   useEffect(() => {
-    if (swidth < 1080) {
-      dispatch(
-        updateMainLayout({
-          rightpart: true,
-          sidebar: false,
-          leftpart: true,
-        }),
-      );
+    let layout;
+    if (swidth >= 1080) {
+      layout = {
+        rightpart: true,
+        sidebar: true,
+        leftpart: true,
+      };
+    } else if (swidth >= 768) {
+      layout = {
+        rightpart: true,
+        sidebar: false,
+        leftpart: true,
+      };
+    } else if (swidth >= 420) {
+      layout = selectedContact
+        ? { rightpart: true, sidebar: false, leftpart: false }
+        : { rightpart: false, sidebar: true, leftpart: true };
     } else {
-      dispatch(
-        updateMainLayout({
-          rightpart: true,
-          sidebar: true,
-          leftpart: true,
-        }),
-      );
+      layout = selectedContact
+        ? { rightpart: true, sidebar: false, leftpart: false }
+        : { rightpart: false, sidebar: false, leftpart: true };
     }
-    if (swidth < 768) {
-      if (selectedContact) {
-        dispatch(
-          updateMainLayout({
-            rightpart: true,
-            sidebar: false,
-            leftpart: false,
-          }),
-        );
-      } else {
-        dispatch(
-          updateMainLayout({
-            rightpart: false,
-            sidebar: true,
-            leftpart: true,
-          }),
-        );
-      }
-    }
-    if (swidth < 420) {
-      if (selectedContact) {
-        dispatch(
-          updateMainLayout({
-            rightpart: true,
-            sidebar: false,
-            leftpart: false,
-          }),
-        );
-      } else {
-        dispatch(
-          updateMainLayout({
-            rightpart: false,
-            sidebar: false,
-            leftpart: true,
-          }),
-        );
-      }
-    }
+
+    dispatch(updateMainLayout(layout));
   }, [swidth, selectedContact, dispatch]);
   useEffect(() => {
     setSidebarPop(false);

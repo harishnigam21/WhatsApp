@@ -6,7 +6,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ActiveContactListMenu from "./ActiveContactListMenu";
-import { useAppSelector } from "@/redux/Store";
+import { useAppDispatch, useAppSelector } from "@/redux/Store";
+import { updateMainLayout } from "@/redux/slices/LayoutSlice";
 
 export default function ActiveContactList({
   item,
@@ -16,14 +17,25 @@ export default function ActiveContactList({
   user: User | null;
 }) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [options, setOptions] = useState<boolean>(false);
   const selectedContactID = useAppSelector(
     (store) => store.chat.selectedContact?._id,
   );
+  const swidth = useAppSelector((store) => store.layout.screenSize.width);
+
   return (
     <div
       className="px-2 w-full"
       onClick={() => {
+        if (swidth <= 768)
+          dispatch(
+            updateMainLayout({
+              sidebar: false,
+              leftpart: false,
+              rightpart: true,
+            }),
+          );
         router.push(`/c=${item?._id}`);
       }}
       onContextMenu={(e) => {

@@ -21,8 +21,8 @@ const initialState: stateProps = {
   headerHeight: null,
   hideHeader: false,
   mainLayout: {
-    sidebar: true,
-    leftpart: true,
+    sidebar: false,
+    leftpart: false,
     rightpart: true,
   },
 };
