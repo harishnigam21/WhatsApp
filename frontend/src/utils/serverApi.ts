@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
 
 export async function serverFetch<T>(
   url: string,
@@ -8,12 +7,10 @@ export async function serverFetch<T>(
   body?: unknown,
   customHeaders?: Record<string, string>,
 ): Promise<{ success: boolean; data: T | null; status: number }> {
-  const in_production = process.env.NEXT_PUBLIC_IN_PRODUCTION === "true";
   const cookieStore = await cookies();
   const token = cookieStore.get("actk")?.value || "";
   const jwt = cookieStore.get("jwt")?.value || null;
   const headers = new Headers(customHeaders);
-  const nextResponse = NextResponse.next();
   if (token) headers.set("Authorization", `Bearer ${token}`);
   if (!headers.has("Content-Type"))
     headers.set("Content-Type", "application/json");

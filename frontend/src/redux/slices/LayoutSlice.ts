@@ -12,6 +12,7 @@ interface stateProps {
     leftpart: boolean;
     rightpart: boolean;
   };
+  mainLoader: boolean;
 }
 const initialState: stateProps = {
   screenSize: {
@@ -22,9 +23,10 @@ const initialState: stateProps = {
   hideHeader: false,
   mainLayout: {
     sidebar: false,
-    leftpart: false,
-    rightpart: true,
+    leftpart: true,
+    rightpart: false,
   },
+  mainLoader: true,
 };
 const LayoutSlice = createSlice({
   name: "mainLayout",
@@ -49,6 +51,9 @@ const LayoutSlice = createSlice({
     ) => {
       state.mainLayout = action.payload;
     },
+    setMainLoader: (state, action: PayloadAction<boolean>) => {
+      state.mainLoader = action.payload;
+    },
   },
 });
 export default LayoutSlice.reducer;
@@ -57,4 +62,5 @@ export const {
   setHeaderHeight,
   setHideHeader,
   updateMainLayout,
+  setMainLoader,
 } = LayoutSlice.actions;

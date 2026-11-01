@@ -4,6 +4,7 @@ import SideBar from "./SideBar";
 import LeftPart from "./LeftPart";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import { updateMainLayout } from "@/redux/slices/LayoutSlice";
+import WhatsAppLoading from "../loader/WhatsAppLoading";
 export default function MainLayout({
   children,
 }: {
@@ -11,6 +12,7 @@ export default function MainLayout({
 }) {
   const dispatch = useAppDispatch();
   const swidth = useAppSelector((store) => store.layout.screenSize.width);
+  const mainLoader = useAppSelector((store) => store.layout.mainLoader);
   const { selectedContact, selectedContactLoading } = useAppSelector(
     (store) => store.chat,
   );
@@ -55,6 +57,7 @@ export default function MainLayout({
   useEffect(() => {
     setSidebarPop(false);
   }, [swidth]);
+  if (mainLoader) return <WhatsAppLoading animateClass="loading-progress2" />;
   return (
     <section className="w-full h-full grow flex overflow-hidden">
       {/* sidebar */}

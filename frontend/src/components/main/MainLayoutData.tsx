@@ -5,10 +5,11 @@ import {
   setActiveContact,
   setContact,
 } from "@/redux/slices/ChatSlice";
+import { setMainLoader } from "@/redux/slices/LayoutSlice";
 import { setLoginStatus, setUser, User } from "@/redux/slices/UserSlice";
 import { useAppDispatch } from "@/redux/Store";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 export default function MainLayoutData({
   dataUser,
   dataContacts,
@@ -34,6 +35,7 @@ export default function MainLayoutData({
         dispatch({ type: "socket/connect", payload: dataUser._id });
       }
     }
+    dispatch(setMainLoader(false));
   }, []);
   return null;
 }
