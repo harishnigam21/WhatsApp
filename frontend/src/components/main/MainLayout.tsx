@@ -42,7 +42,7 @@ export default function MainLayout({
     dispatch(updateMainLayout(layout));
   }, [swidth, selectedContact, dispatch]);
   useEffect(() => {
-    if (swidth <= 768) {
+    if (selectedContactLoading && swidth <= 768) {
       dispatch(
         updateMainLayout({
           sidebar: false,
