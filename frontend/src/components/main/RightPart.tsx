@@ -446,7 +446,20 @@ export default function RightPart({
       setSendDisable(true);
     }
   }, [input]);
+  useEffect(() => {
+    window.history.pushState({ preventExit: true }, "", window.location.href);
+    const handlePopState = () => {
+      dispatch(clearSelectedContact());
+      router.push("/");
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
   if (!selectedContact) return;
+
   return (
     <section
       className={`${mainLayout.rightpart ? "relative min-w-10 grow flex flex-col bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_10%)]" : "hidden"}`}
@@ -462,13 +475,6 @@ export default function RightPart({
             title="go back"
             className="flex md:hidden justify-center items-center cursor-pointer"
             onClick={() => {
-              dispatch(
-                updateMainLayout({
-                  sidebar: true,
-                  leftpart: true,
-                  rightpart: false,
-                }),
-              );
               dispatch(clearSelectedContact());
               router.push("/");
             }}
