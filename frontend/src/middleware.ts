@@ -3,6 +3,9 @@ import { jwtVerify } from "jose";
 import type { NextRequest } from "next/server";
 const in_production = process.env.NEXT_PUBLIC_IN_PRODUCTION === "true";
 export async function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname === "/login") {
+    return NextResponse.next();
+  }
   const actk = request.cookies.get("actk")?.value;
   const jwt = request.cookies.get("jwt")?.value;
 
