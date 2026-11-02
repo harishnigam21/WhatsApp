@@ -174,6 +174,7 @@ export default function LeftPart({
           <div className="flex flex-nowrap items-center gap-4">
             {mainLayout.leftpart && !mainLayout.sidebar && !sidebarpop && (
               <div
+                id="sidebarbtn"
                 title="open sidebar"
                 className="-ml-2 cursor-pointer"
                 onClick={() => {

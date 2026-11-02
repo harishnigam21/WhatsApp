@@ -1,6 +1,9 @@
 "use client";
 
-import { clearSelectedContact, setSelectedContactLoading } from "@/redux/slices/ChatSlice";
+import {
+  clearSelectedContact,
+  setSelectedContactLoading,
+} from "@/redux/slices/ChatSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import {
   Bot,
@@ -15,6 +18,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 export default function SideBar({
   sidebarpop,
@@ -27,13 +31,31 @@ export default function SideBar({
   const mainLayout = useAppSelector((store) => store.layout.mainLayout);
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as HTMLElement;
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        target.id !== "sidebarbtn" &&
+        !target.closest("#sidebarbtn")
+      ) {
+        setSidebarPop(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   return (
     <section
+      ref={menuRef}
       className={`flex flex-col pt-3 items-center gap-1 bg-[color-mix(in_srgb,var(--color-bgpri)_10%,var(--color-bgsec)_100%)] ${mainLayout.sidebar ? "w-16 min-h-full p-2 border-r border-borderhl/40" : sidebarpop ? "fixed left-0 z-50 w-16 min-h-full p-2 border-r border-borderhl/40" : "hidden"}`}
     >
       <div className="flex flex-col items-center gap-1">
         {mainLayout.leftpart && !mainLayout.sidebar && sidebarpop && (
           <div
+            id="sidebarbtn"
             title="open sidebar"
             className="hover:bg-borderhl/30 active:bg-borderhl/30 rounded-full p-2.5 cursor-pointer transition-all"
             onClick={() => {
@@ -68,7 +90,7 @@ export default function SideBar({
         ))}
       </div>
       <hr className="w-8/10 border border-borderhl/40 my-2" />
-      <div className="flex flex-col h-full justify-between items-center gap-1">
+      <div className="flex flex-col h-full justify-between items-center grow gap-1">
         <div className="hover:bg-borderhl/30 active:bg-borderhl/30 rounded-full p-2.5 cursor-pointer transition-all">
           <Bot className="" size={24} />
         </div>
