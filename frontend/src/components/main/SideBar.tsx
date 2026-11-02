@@ -71,7 +71,7 @@ export default function SideBar({
             name: "Chats",
             onClick: () => {
               dispatch(clearSelectedContact());
-              router.push("/");
+              router.replace("/");
             },
           },
           { icon: Phone, name: "Calls", onClick: () => {} },

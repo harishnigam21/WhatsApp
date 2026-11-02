@@ -450,7 +450,7 @@ export default function RightPart({
     window.history.pushState({ preventExit: true }, "", window.location.href);
     const handlePopState = () => {
       dispatch(clearSelectedContact());
-      router.push("/");
+      router.replace("/");
     };
     window.addEventListener("popstate", handlePopState);
     return () => {
@@ -476,7 +476,14 @@ export default function RightPart({
             className="flex md:hidden justify-center items-center cursor-pointer"
             onClick={() => {
               dispatch(clearSelectedContact());
-              router.push("/");
+              dispatch(
+                updateMainLayout({
+                  sidebar: false,
+                  leftpart: true,
+                  rightpart: false,
+                }),
+              );
+              router.replace("/");
             }}
           >
             <ArrowLeft size={20} className="scale-x-125" />
