@@ -61,53 +61,6 @@ export default function Main() {
     setVerifyOTP(false);
     setMoreDetails(false);
   };
-  // handleSendOTP old
-  // const handlSendOTP = async () => {
-  //   if (sendOTPLoading) return;
-  //   if (!countryCode) {
-  //     toast.error("No country code selected");
-  //     return;
-  //   }
-  //   if (!mobileNumber) {
-  //     toast.error("Mobile number is required");
-  //     return;
-  //   }
-  //   await sendOTPRequest("api/auth/send-otp", "POST", {
-  //     phone: mobileNumber,
-  //     phoneCode: countryCode,
-  //   })
-  //     .then((result) => {
-  //       const responseData = result.data as {
-  //         message: string;
-  //         sendOTP?: boolean;
-  //         phone?: string;
-  //         moreInfo?: boolean;
-  //       };
-  //       if (result && result.success) {
-  //         if (
-  //           responseData.phone !==
-  //           `${(countryCode || "") + (mobileNumber || "")}`
-  //         ) {
-  //           toast.error("Mobile number mismatches");
-  //           return;
-  //         }
-  //         setVerifyOTP(true);
-  //         setTimerStatus("start");
-  //         setTimer(30);
-  //         setResendStatus(false);
-  //       } else {
-  //         if (responseData.moreInfo) {
-  //           setMoreDetails(true);
-  //           return;
-  //         }
-  //         throw new Error(responseData?.message || "Failed to send OTP");
-  //       }
-  //     })
-  //     .catch((error) => {
-  //       toast.error(error?.message || "Failed to send OTP");
-  //     });
-  // };
-
   // Setup reCAPTCHA container
   const setupRecaptcha = async (): Promise<RecaptchaVerifier> => {
     if (!window.recaptchaVerifier) {
@@ -129,6 +82,7 @@ export default function Main() {
 
   //handleSendOTP new
   const handleSendOTP = async () => {
+    if (sendOTPLoading) return;
     setSendOTPLoading(true);
     try {
       if (sendOTPLoading) return;
@@ -241,6 +195,7 @@ export default function Main() {
     skip: boolean = false,
     tk: string | null = null,
   ) => {
+    if (loginLoading) return;
     setLoginLoading(true);
     try {
       if (!confirmationResult) {
