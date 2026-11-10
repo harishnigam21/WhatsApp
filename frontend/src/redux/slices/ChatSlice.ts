@@ -19,6 +19,7 @@ export interface MessageType {
   content: string;
   attachments?: AttachmentType[];
   seen: "seen" | "unseen" | "semiseen";
+  starred: boolean;
   createdAt: Date;
 }
 export interface Contact {
@@ -323,6 +324,34 @@ const ChatSlice = createSlice({
     clearSelectionFor: (state) => {
       state.selectionFor = [];
     },
+    starMsg: (state, action: PayloadAction<{ id: string }>) => {
+      const messageID = action.payload.id;
+      const userId = state.selectedContact?._id;
+      if (!userId || !state.selectedContact) return;
+      state.selectedContact.messages = state.selectedContact?.messages.map(
+        (item) => {
+          if (item._id === messageID) {
+            return { ...item, starred: true };
+          } else {
+            return item;
+          }
+        },
+      );
+    },
+    unstarMsg: (state, action: PayloadAction<{ id: string }>) => {
+      const messageID = action.payload.id;
+      const userId = state.selectedContact?._id;
+      if (!userId || !state.selectedContact) return;
+      state.selectedContact.messages = state.selectedContact?.messages.map(
+        (item) => {
+          if (item._id === messageID) {
+            return { ...item, starred: false };
+          } else {
+            return item;
+          }
+        },
+      );
+    },
   },
 });
 export const {
@@ -345,5 +374,7 @@ export const {
   setSelectedFor,
   setSelectionFor,
   clearSelectionFor,
+  starMsg,
+  unstarMsg,
 } = ChatSlice.actions;
 export default ChatSlice.reducer;

@@ -26,3 +26,49 @@ export const sendMsg = async (req: AuthRequest, res: Response) => {
     getServerError(res, error, "sendMsg Controller");
   }
 };
+export const startMsg = async (req: AuthRequest, res: Response) => {
+  try {
+    const msgId = req.params.id;
+    const userId = req.user?._id;
+    if (!msgId || !userId) return res.status(400).json({ status: false });
+    const updateMsg = await Message.findOneAndUpdate(
+      {
+        _id: msgId,
+        $or: [{ sender_id: userId }, { receiver_id: userId }],
+      },
+      { $addToSet: { starred: userId } },
+      { new: true },
+    );
+    if (!updateMsg) {
+      return res
+        .status(400)
+        .json({ message: "Invalid operation on message", status: false });
+    }
+    return res.status(200).json({ status: true });
+  } catch (error) {
+    getServerError(res, error, "startMsg");
+  }
+};
+export const unStartMsg = async (req: AuthRequest, res: Response) => {
+  try {
+    const msgId = req.params.id;
+    const userId = req.user?._id;
+    if (!msgId || !userId) return res.status(400).json({ status: false });
+    const updateMsg = await Message.findOneAndUpdate(
+      {
+        _id: msgId,
+        $or: [{ sender_id: userId }, { receiver_id: userId }],
+      },
+      { $pull: { starred: userId } },
+      { new: true },
+    );
+    if (!updateMsg) {
+      return res
+        .status(400)
+        .json({ message: "Invalid operation on message", status: false });
+    }
+    return res.status(200).json({ status: true });
+  } catch (error) {
+    getServerError(res, error, "startMsg");
+  }
+};

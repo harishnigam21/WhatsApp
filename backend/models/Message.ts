@@ -60,6 +60,9 @@ const messageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    starred: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
+    ],
   },
   { timestamps: true },
 );

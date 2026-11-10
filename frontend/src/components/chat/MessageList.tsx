@@ -1,12 +1,25 @@
 "use client";
 
-import { MessageType, setSelectionFor } from "@/redux/slices/ChatSlice";
+import {
+  MessageType,
+  setSelectionFor,
+  starMsg,
+  unstarMsg,
+} from "@/redux/slices/ChatSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import { formatRelativeDate, formatTimeToAmPm } from "@/utils/dateFormats";
-import { Check, CheckCheck, ChevronDown } from "lucide-react";
+import {
+  Check,
+  CheckCheck,
+  ChevronDown,
+  LoaderCircle,
+  Star,
+} from "lucide-react";
 import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 import AttachmentGrid from "./AttachmentGrid";
 import MessageListMenu from "./MessageListMenu";
+import useApi from "@/hooks/useApi";
+import toast from "react-hot-toast";
 
 export default function MessageList() {
   const selectedContact = useAppSelector((store) => store.chat.selectedContact);
@@ -36,6 +49,7 @@ export default function MessageList() {
   }, [selectedContact?.messages]);
 
   if (!selectedContact) return null;
+
   useEffect(() => {
     if (!sectionRef.current) return;
     const observer = new ResizeObserver((entries) => {
@@ -95,6 +109,7 @@ const MessageBody = ({
   const [options, setOptions] = useState<boolean>(false);
   const [selected, setSelected] = useState<boolean>(false);
   const dispatch = useAppDispatch();
+  const { sendRequest: StarRequest, loading: StarLoading } = useApi();
   useEffect(() => {
     const cid = item._id;
     const isSelected = selectionFor.findIndex((item) => item === cid);
@@ -104,6 +119,48 @@ const MessageBody = ({
       setSelected(true);
     }
   }, [selectionFor]);
+  const handleUnStar = async () => {
+    if (!item.starred) return;
+    try {
+      await StarRequest(`api/message/unstar/${item._id}`).then((result) => {
+        const data = result.data as { message?: string; status: boolean };
+        if (result && result.success && data.status) {
+          dispatch(unstarMsg({ id: item._id }));
+          toast.success("Message UnStarred");
+        } else {
+          const msg = data.message || "Failed to UnStar";
+          throw new Error(msg);
+        }
+      });
+    } catch (error) {
+      let msg = "Failed to UnStar";
+      if (error instanceof Error) {
+        msg = error.message;
+      }
+      toast.error(msg);
+    }
+  };
+  const handleStar = async () => {
+    if (item.starred) return;
+    try {
+      await StarRequest(`api/message/star/${item._id}`).then((result) => {
+        const data = result.data as { message?: string; status: boolean };
+        if (result && result.success && data.status) {
+          dispatch(starMsg({ id: item._id }));
+          toast.success("Message Starred");
+        } else {
+          const msg = data?.message || "Failed to Star";
+          throw new Error(msg);
+        }
+      });
+    } catch (error) {
+      let msg = "Failed to Star";
+      if (error instanceof Error) {
+        msg = error.message;
+      }
+      toast.error(msg);
+    }
+  };
   return (
     <div
       onContextMenu={(e) => {
@@ -162,7 +219,20 @@ const MessageBody = ({
             <small className="text-txpri/75 text-[10px] mr-1">
               {formatTimeToAmPm(item.createdAt)}
             </small>
-
+            {StarLoading ? (
+              <div className="flex items-center px-0.5 pb-1">
+                <LoaderCircle size={8} className="animate-spin" />
+              </div>
+            ) : (
+              item.starred && (
+                <div
+                  className="flex items-center pb-1 px-0.5 cursor-pointer"
+                  onClick={handleUnStar}
+                >
+                  <Star fill="yellow" size={8} />
+                </div>
+              )
+            )}
             {item.sender_id === userID &&
               (item.seen === "unseen" ? (
                 <Check size={14} className="size-3 text-txsec" />
@@ -192,6 +262,7 @@ const MessageBody = ({
             messageRef={messageRef}
             setOptions={setOptions}
             sectionRef={sectionRef}
+            handleStar={handleStar}
           />
         )}
       </div>
