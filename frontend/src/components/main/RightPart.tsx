@@ -55,6 +55,7 @@ import { formatBytes } from "@/utils/formatBytes";
 import RightPartMenu from "./RightPartMenu";
 import Loading from "@/app/(main)/loading";
 import { handleDeleteMessage } from "@/services/MessageDelete";
+import ContactInfo from "./ContactInfo";
 
 export default function RightPart({
   children,
@@ -73,6 +74,7 @@ export default function RightPart({
   const [showPicker, setShowPicker] = useState<boolean>(false);
   const [showAttachOptions, setShowAttachOptions] = useState<boolean>(false);
   const [switchTextArea, setSwitchTextArea] = useState<boolean>(false);
+  const [contactInfo, setContactInfo] = useState<boolean>(false);
   const [input, setInput] = useState<string>("");
   const [files, setFiles] = useState<
     { file: File; URL: string; message: string }[]
@@ -473,11 +475,18 @@ export default function RightPart({
     >
       {/* heading */}
       <div className="w-full box-border py-3 px-1 sm:px-4 flex flex-nowrap justify-between gap-1 h-16 bg-bgsec/40">
-        <div className="flex flex-nowrap gap-3 items-center whitespace-nowrap">
+        <div
+          className="flex flex-nowrap gap-3 items-center whitespace-nowrap cursor-pointer grow"
+          id="forContactInfo"
+          onClick={() => {
+            setContactInfo(true);
+          }}
+        >
           <div
             title="go back"
             className="flex md:hidden justify-center items-center cursor-pointer"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               dispatch(clearSelectedContact());
               dispatch(
                 updateMainLayout({
@@ -491,7 +500,7 @@ export default function RightPart({
           >
             <ArrowLeft size={20} className="scale-x-125" />
           </div>
-          <div className="size-full aspect-square border rounded-full overflow-hidden">
+          <div className="size-8 aspect-square border rounded-full overflow-hidden">
             {selectedContact.pic ? (
               <Image
                 loading="eager"
@@ -722,6 +731,15 @@ export default function RightPart({
           loading={loading}
           activeTransferFiles={activeTransferFiles}
         />
+      )}
+      {contactInfo && (
+        <article className="absolute right-0 top-0 min-w-9/10 max-w-140 sm:min-w-100 lg:min-w-120 sm:max-w-160 h-full z-15 bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)]">
+          <ContactInfo
+            contactInfo={contactInfo}
+            setContactInfo={setContactInfo}
+            optionItem={optionItem}
+          />
+        </article>
       )}
     </section>
   );

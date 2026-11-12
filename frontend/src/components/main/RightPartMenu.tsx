@@ -1,4 +1,5 @@
-import { setSelectedFor } from "@/redux/slices/ChatSlice";
+import { clearSelectedContact, setSelectedFor } from "@/redux/slices/ChatSlice";
+import { updateMainLayout } from "@/redux/slices/LayoutSlice";
 import { useAppDispatch } from "@/redux/Store";
 import {
   BookCopy,
@@ -11,6 +12,7 @@ import {
   Palette,
   SquareCheck,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 export default function RightPartMenu({
@@ -22,6 +24,7 @@ export default function RightPartMenu({
 }) {
   const optionRef = useRef<HTMLOListElement>(null);
   const dispatch = useAppDispatch();
+  const router = useRouter();
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as HTMLElement;
@@ -68,7 +71,21 @@ export default function RightPartMenu({
         { name: "Add to favorites", icon: Heart, onclick: () => {} },
         { name: "Add to list", icon: BookCopy, onclick: () => {} },
         { name: "Export chat", icon: Download, onclick: () => {} },
-        { name: "Close chat", icon: CircleX, onclick: () => {} },
+        {
+          name: "Close chat",
+          icon: CircleX,
+          onclick: () => {
+            dispatch(clearSelectedContact());
+            dispatch(
+              updateMainLayout({
+                sidebar: false,
+                leftpart: true,
+                rightpart: false,
+              }),
+            );
+            router.replace("/");
+          },
+        },
       ].map((item, i) => (
         <li
           title={item.name}
