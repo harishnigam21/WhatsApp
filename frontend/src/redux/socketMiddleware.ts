@@ -5,6 +5,7 @@ import {
   addReceiverMessage,
   addSenderMessage,
   clearUnread,
+  deleteMsgR,
   markAllSeen,
   markSeen,
   markSemiSeen,
@@ -101,6 +102,13 @@ export const socketMiddleware: Middleware =
         socket.on("semiSeenDone", (data) => {
           const { messageIds, receiver_id } = data;
           store.dispatch(markSemiSeen({ messageIds, receiver_id }));
+        });
+        socket.on("deleteMsgs", (data) => {
+          const { ids, deletedBy } = data as {
+            ids: string[];
+            deletedBy: string;
+          };
+          store.dispatch(deleteMsgR({ ids, deletedBy }));
         });
         socket.on("getOfflineUser", (data) => {
           const { userId, lastSeen } = data;

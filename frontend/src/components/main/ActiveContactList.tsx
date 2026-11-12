@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ActiveContactListMenu from "./ActiveContactListMenu";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
-import { updateMainLayout } from "@/redux/slices/LayoutSlice";
 
 export default function ActiveContactList({
   item,
@@ -64,17 +63,18 @@ export default function ActiveContactList({
             {item._id == user?._id ? "You" : item.name}
           </p>
           <div className="flex flex-nowrap items-center gap-1">
-            {item.lastMessage.sender_id == user?._id && (
-              <div>
-                {item.lastMessage.seen == "unseen" ? (
-                  <Check size={14} className="mt-1 text-txsec" />
-                ) : item.lastMessage.seen == "seen" ? (
-                  <CheckCheck size={14} className="mt-1 text-blue-500" />
-                ) : (
-                  <CheckCheck size={14} className="mt-1 text-txsec" />
-                )}
-              </div>
-            )}
+            {item.lastMessage.sender_id == user?._id &&
+              !item.lastMessage.deletedFor && (
+                <div>
+                  {item.lastMessage.seen == "unseen" ? (
+                    <Check size={14} className="mt-1 text-txsec" />
+                  ) : item.lastMessage.seen == "seen" ? (
+                    <CheckCheck size={14} className="mt-1 text-blue-500" />
+                  ) : (
+                    <CheckCheck size={14} className="mt-1 text-txsec" />
+                  )}
+                </div>
+              )}
             <small className="text-txpri/75 break-all line-clamp-1 flex items-center">
               {item.lastMessage.attachments &&
               item.lastMessage.attachments.length >= 1 ? (

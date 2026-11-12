@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  clearSelectionFor,
   MessageType,
   setSelectionFor,
   starMsg,
@@ -20,6 +21,7 @@ import AttachmentGrid from "./AttachmentGrid";
 import MessageListMenu from "./MessageListMenu";
 import useApi from "@/hooks/useApi";
 import toast from "react-hot-toast";
+import { handleDeleteMessage } from "@/services/MessageDelete";
 
 export default function MessageList() {
   const selectedContact = useAppSelector((store) => store.chat.selectedContact);
@@ -161,6 +163,7 @@ const MessageBody = ({
       toast.error(msg);
     }
   };
+  const { handleDelete, loading: deleteLoading } = handleDeleteMessage();
   return (
     <div
       onContextMenu={(e) => {
@@ -168,7 +171,7 @@ const MessageBody = ({
         e.preventDefault();
         setOptions(true);
       }}
-      className={`w-full flex flex-nowrap gap-2 py-0.5 ${item.sender_id === userID && "justify-end"} ${selected && selectedFor && "bg-bgsec/70"} ${selectedFor && "hover:bg-bgsec/70 active:bg-bgsec/70 cursor-pointer"} px-4 sm:px-8 lg:px-16`}
+      className={`w-full flex flex-nowrap gap-2 py-0.5 ${item.sender_id === userID && "justify-end"} ${selected && selectedFor && "bg-bgsec/70"} ${selectedFor && "hover:bg-bgsec/70 active:bg-bgsec/70 cursor-pointer"} px-4 sm:px-8 lg:px-16 ${deleteLoading && selectionFor.includes(item._id) && "animate-pulse"}`}
       onClick={() => {
         if (selectedFor) dispatch(setSelectionFor(item._id));
       }}
@@ -210,7 +213,9 @@ const MessageBody = ({
         <div className="flex flex-nowrap w-full py-0.5 px-1.5 mt-1">
           {!attachment ||
             (attachment.length <= 1 && (
-              <p className="text-xs sm:text-sm md:text-base pb-1 whitespace-pre-wrap">
+              <p
+                className={`text-xs sm:text-sm md:text-base pb-1 whitespace-pre-wrap ${item.deletedFor && "text-txpri/30"}`}
+              >
                 {item.content}
               </p>
             ))}
@@ -234,6 +239,7 @@ const MessageBody = ({
               )
             )}
             {item.sender_id === userID &&
+              !item.deletedFor &&
               (item.seen === "unseen" ? (
                 <Check size={14} className="size-3 text-txsec" />
               ) : item.seen === "seen" ? (
@@ -258,11 +264,17 @@ const MessageBody = ({
         </div>
         {options && (
           <MessageListMenu
+            deleted={item.deletedFor || false}
             options={options}
             messageRef={messageRef}
             setOptions={setOptions}
             sectionRef={sectionRef}
             handleStar={handleStar}
+            handleDelete={() => {
+              handleDelete([item._id]);
+              dispatch(clearSelectionFor());
+              dispatch(setSelectionFor(item._id));
+            }}
           />
         )}
       </div>

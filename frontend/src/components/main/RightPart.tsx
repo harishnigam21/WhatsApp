@@ -25,6 +25,7 @@ import {
   Trash,
   Forward,
   Download,
+  LoaderCircle,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
@@ -37,6 +38,7 @@ import {
   addSenderMessage,
   clearSelectedContact,
   clearSelectionFor,
+  deleteMsg,
   MessageType,
   setCachedUrls,
   setSelectedContactLoading,
@@ -52,6 +54,7 @@ import { useRouter } from "next/navigation";
 import { formatBytes } from "@/utils/formatBytes";
 import RightPartMenu from "./RightPartMenu";
 import Loading from "@/app/(main)/loading";
+import { handleDeleteMessage } from "@/services/MessageDelete";
 
 export default function RightPart({
   children,
@@ -457,7 +460,7 @@ export default function RightPart({
       window.removeEventListener("popstate", handlePopState);
     };
   }, []);
-
+  const { handleDelete, loading: deleteLoading } = handleDeleteMessage();
   if (!selectedContact) return;
 
   return (
@@ -579,19 +582,53 @@ export default function RightPart({
               </div>
               <div className="flex flex-nowrap items-center gap-4">
                 {[
-                  { icon: Star, name: "Star" },
-                  { icon: Trash, name: "Delete" },
-                  { icon: Forward, name: "Forward" },
-                  { icon: Download, name: "Download" },
-                ].map((item, i) => (
-                  <button
-                    disabled={selectionFor.length == 0}
-                    title={item.name}
-                    key={`selected/perform/operation/${i}`}
-                  >
-                    <item.icon size={20} />
-                  </button>
-                ))}
+                  {
+                    icon: Star,
+                    name: "Star",
+                    onClick: () => {},
+                    loader: false,
+                  },
+                  {
+                    icon: Trash,
+                    name: "Delete",
+                    onClick: () => handleDelete(selectionFor),
+                    loader: deleteLoading,
+                  },
+                  {
+                    icon: Forward,
+                    name: "Forward",
+                    onClick: () => {},
+                    loader: false,
+                  },
+                  {
+                    icon: Download,
+                    name: "Download",
+                    onClick: () => {},
+                    loader: false,
+                  },
+                ].map((item, i) => {
+                  if (item.loader) {
+                    return (
+                      <LoaderCircle
+                        key={`selected/perform/operation/${i}`}
+                        size={20}
+                        className="animate-spin"
+                      />
+                    );
+                  } else {
+                    return (
+                      <button
+                        onClick={item.onClick}
+                        disabled={selectionFor.length == 0}
+                        title={item.name}
+                        className="cursor-pointer"
+                        key={`selected/perform/operation/${i}`}
+                      >
+                        <item.icon size={20} />
+                      </button>
+                    );
+                  }
+                })}
               </div>
             </div>
           ) : (

@@ -20,6 +20,9 @@ export interface MessageType {
   attachments?: AttachmentType[];
   seen: "seen" | "unseen" | "semiseen";
   starred: boolean;
+  deletedFor?: boolean;
+  inTrash?: boolean;
+  deletedForEveryone?: boolean;
   createdAt: Date;
 }
 export interface Contact {
@@ -352,6 +355,81 @@ const ChatSlice = createSlice({
         },
       );
     },
+    deleteMsg: (
+      state,
+      action: PayloadAction<
+        {
+          _id: string;
+          deletedFor: boolean;
+          inTrash: boolean;
+          deletedForEveryone: boolean;
+          content: string;
+          attachments: any[];
+        }[]
+      >,
+    ) => {
+      const updatedData = action.payload;
+      if (!state.selectedContact) return;
+      const sacl = state.activeContacts.findIndex(
+        (item) => item._id === state.selectedContact?._id,
+      );
+      let previousMessage: MessageType | null = null;
+      state.selectedContact.messages = state.selectedContact.messages.reduce(
+        (acc: MessageType[], item) => {
+          const inUpdate = updatedData.find((inI) => inI._id === item._id);
+          if (
+            sacl !== -1 &&
+            state.activeContacts[sacl].lastMessage._id == inUpdate?._id
+          ) {
+            if (inUpdate.inTrash) {
+              state.activeContacts[sacl].lastMessage = previousMessage
+                ? previousMessage
+                : {
+                    ...state.activeContacts[sacl].lastMessage,
+                    ...inUpdate,
+                    content: "-",
+                    createdAt: "invalid" as unknown as Date,
+                  };
+            } else {
+              state.activeContacts[sacl].lastMessage = {
+                ...state.activeContacts[sacl].lastMessage,
+                ...inUpdate,
+              };
+            }
+          }
+          if (inUpdate) {
+            if (inUpdate.deletedForEveryone || inUpdate.inTrash) {
+              return acc;
+            }
+            acc.push({ ...item, ...inUpdate });
+          } else {
+            acc.push(item);
+          }
+          previousMessage = item;
+          return acc;
+        },
+        [],
+      );
+    },
+    deleteMsgR: (
+      state,
+      action: PayloadAction<{ ids: string[]; deletedBy: string }>,
+    ) => {
+      const ids = action.payload.ids;
+      const deletedBy = action.payload.deletedBy;
+      const sacl = state.activeContacts.findIndex(
+        (item) => item._id === deletedBy,
+      );
+      if (sacl == -1) return;
+      const lastMessage = state.activeContacts[sacl].lastMessage;
+      if (ids.includes(lastMessage._id)) {
+        state.activeContacts[sacl].lastMessage = {
+          ...lastMessage,
+          content: "This message was deleted",
+          attachments: [],
+        };
+      }
+    },
   },
 });
 export const {
@@ -376,5 +454,7 @@ export const {
   clearSelectionFor,
   starMsg,
   unstarMsg,
+  deleteMsg,
+  deleteMsgR,
 } = ChatSlice.actions;
 export default ChatSlice.reducer;
