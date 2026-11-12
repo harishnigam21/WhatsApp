@@ -134,14 +134,14 @@ export const getContacts = async (req: AuthRequest, res: Response) => {
 
 export const getActiveContacts = async (req: AuthRequest, res: Response) => {
   try {
+    const userId = new mongoose.Types.ObjectId(req.user!._id);
     const contactList = await Message.aggregate([
       // 1. Find only messages involving the current user
       {
         $match: {
-          $or: [
-            { sender_id: new mongoose.Types.ObjectId(req.user?._id) },
-            { receiver_id: new mongoose.Types.ObjectId(req.user?._id) },
-          ],
+          deletedForEveryone: false,
+          inTrash: { $nin: [userId] },
+          $or: [{ sender_id: userId }, { receiver_id: userId }],
         },
       },
       // 2. Sort by newest first
@@ -177,12 +177,10 @@ export const getActiveContacts = async (req: AuthRequest, res: Response) => {
                 if: {
                   $and: [
                     {
-                      $eq: [
-                        "$receiver_id",
-                        new mongoose.Types.ObjectId(req.user?._id),
-                      ],
+                      $eq: ["$receiver_id", userId],
                     },
                     { $ne: ["$seen", "seen"] },
+                    { $eq: ["$deletedForEveryone", false] },
                   ],
                 },
                 then: 1,
@@ -202,6 +200,13 @@ export const getActiveContacts = async (req: AuthRequest, res: Response) => {
         },
       },
       { $unwind: "$profile" },
+      {
+        $addFields: {
+          isDeletedForMe: {
+            $in: [userId, { $ifNull: ["$lastMessage.deletedFor", []] }],
+          },
+        },
+      },
       // 7. Format the output to look exactly like your required object structure
       {
         $project: {
@@ -214,9 +219,22 @@ export const getActiveContacts = async (req: AuthRequest, res: Response) => {
             _id: "$lastMessage._id",
             sender_id: "$lastMessage.sender_id",
             receiver_id: "$lastMessage.receiver_id",
-            content: "$lastMessage.content",
+            content: {
+              $cond: {
+                if: "$isDeletedForMe",
+                then: "This message was deleted",
+                else: "$lastMessage.content",
+              },
+            },
             seen: "$lastMessage.seen",
-            attachments: "$lastMessage.attachments",
+            attachments: {
+              $cond: {
+                if: "$isDeletedForMe",
+                then: [],
+                else: "$lastMessage.attachments",
+              },
+            },
+            deletedFor: "$isDeletedForMe",
             createdAt: "$lastMessage.createdAt",
           },
         },

@@ -56,6 +56,12 @@ const messageSchema = new mongoose.Schema(
         ref: "users",
       },
     ],
+    inTrash: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "users",
+      },
+    ],
     deletedForEveryone: {
       type: Boolean,
       default: false,

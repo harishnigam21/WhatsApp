@@ -19,6 +19,8 @@ export const getChat = async (req: AuthRequest, res: Response) => {
     const messages = await Message.aggregate([
       {
         $match: {
+          deletedForEveryone: false,
+          inTrash: { $nin: [currentUserId] },
           $or: [
             { sender_id: currentUserId, receiver_id: targetId },
             { sender_id: targetId, receiver_id: currentUserId },
@@ -26,11 +28,19 @@ export const getChat = async (req: AuthRequest, res: Response) => {
         },
       },
       {
+        $sort: { createdAt: 1 },
+      },
+      {
+        $addFields: {
+          isDeletedForMe: {
+            $in: [currentUserId, { $ifNull: ["$deletedFor", []] }],
+          },
+        },
+      },
+      {
         $project: {
           sender_id: 1,
           receiver_id: 1,
-          content: 1,
-          attachments: 1,
           seen: 1,
           createdAt: 1,
           // Checks if currentUserId is inside the starred array
@@ -41,6 +51,21 @@ export const getChat = async (req: AuthRequest, res: Response) => {
               else: false,
             },
           },
+          attachments: {
+            $cond: {
+              if: "$isDeletedForMe",
+              then: [],
+              else: "$attachments",
+            },
+          },
+          content: {
+            $cond: {
+              if: "$isDeletedForMe",
+              then: "This message was deleted",
+              else: "$content",
+            },
+          },
+          deletedFor: "$isDeletedForMe",
         },
       },
     ]);
