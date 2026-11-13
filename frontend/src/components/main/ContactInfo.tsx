@@ -18,23 +18,27 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MdPermMedia } from "react-icons/md";
 
 export default function ContactInfo({
-  contactInfo,
   setContactInfo,
   optionItem,
 }: {
-  contactInfo: boolean;
   setContactInfo: React.Dispatch<React.SetStateAction<boolean>>;
   optionItem: { icon: LucideIcon; name: string }[];
 }) {
+  const [viewPic, setViewPic] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const containerRef = useRef<HTMLDivElement>(null);
+  const picRef = useRef<HTMLImageElement>(null);
   const userInfo = useAppSelector((store) => store.user.userInfo);
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as HTMLElement;
+      if (picRef.current && !picRef.current.contains(event.target as Node)) {
+        setViewPic(false);
+      }
       if (
         containerRef.current &&
         !containerRef.current.contains(event.target as Node) &&
@@ -47,12 +51,45 @@ export default function ContactInfo({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+  useEffect(() => {
+    setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+  }, []);
   if (!userInfo) return;
+  if (loading)
+    return (
+      <article
+        ref={containerRef}
+        className="relative w-full h-full overflow-hidden"
+      >
+        <ContactInfoSkeleton />
+      </article>
+    );
   return (
     <article
       ref={containerRef}
       className="relative w-full h-full overflow-y-scroll scrollbar-thin scrollbar-thumb-borderhl/40"
     >
+      {/* view pic */}
+      {viewPic && userInfo.pic && (
+        <div className="fixed top-0 left-0 w-full h-full bg-bgpri/90 backdrop-blur-sm flex items-center justify-center inset-0 z-40 p-2">
+          <Image
+            ref={picRef}
+            src={userInfo.pic}
+            loading="eager"
+            width={400}
+            height={400}
+            alt="pic view"
+            className="object-cover aspect-square"
+          />
+          <X
+            size={30}
+            className="fixed top-2 right-2 cursor-pointer"
+            onClick={() => setViewPic(false)}
+          />
+        </div>
+      )}
       {/* close,title and edit */}
       <div className="flex flex-nowrap items-center justify-between gap-1 sticky top-0 z-20 bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)] px-4 pt-4 pb-4">
         <div className="flex items-center flex-nowrap gap-4">
@@ -75,7 +112,15 @@ export default function ContactInfo({
         <div className="flex flex-col items-center-safe p-4 pt-3 gap-2">
           <div className="size-30 rounded-full overflow-hidden relative">
             {userInfo.pic ? (
-              <Image src={userInfo.pic} loading="lazy" fill alt="user pic" />
+              <Image
+                onClick={() => setViewPic(true)}
+                title="view pic"
+                src={userInfo.pic}
+                loading="lazy"
+                className="cursor-pointer"
+                fill
+                alt="user pic"
+              />
             ) : (
               <div className="size-full flex justify-center items-center text-4xl font-semibold bg-pri/40">
                 {userInfo?.name[0]}
@@ -212,5 +257,54 @@ export default function ContactInfo({
         </div>
       </div>
     </article>
+  );
+}
+function ContactInfoSkeleton() {
+  return (
+    <>
+      {/* close,title and edit */}
+      <div className="flex flex-nowrap items-center justify-between gap-1 sticky top-0 z-20 bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)] px-4 pt-4 pb-4">
+        <div className="flex items-center flex-nowrap gap-4">
+          <div className="cursor-pointer bg-borderhl/40 rounded-full transition-all p-2 size-8 animate-pulse"></div>
+          <p className="font-medium w-25 h-7 bg-borderhl/40 animate-pulse rounded-md"></p>
+        </div>
+        <div className="cursor-pointer bg-borderhl/40 rounded-full transition-all p-2 size-8 animate-pulse"></div>
+      </div>
+      <div className="flex flex-col gap-1 animate-[fromTop_0.3s_ease-in-out] p-4">
+        {/* picture, name, number */}
+        <div className="flex flex-col items-center-safe p-4 pt-3 gap-2">
+          <div className="size-30 rounded-full overflow-hidden relative">
+            <div className="size-full flex justify-center items-center text-4xl font-semibold bg-borderhl/40 animate-pulse"></div>
+          </div>
+          <h4 className="text-xl md:text-2xl font-medium w-40 h-8 bg-borderhl/40 animate-pulse"></h4>
+          <p className="bg-borderhl/40 animate-pulse w-30 h-5 font-medium rounded-md"></p>
+        </div>
+        {/* voice,video,search button */}
+        <div className="flex flex-nowrap gap-3 justify-center">
+          {Array.from({ length: 3 }).map((item, i) => (
+            <div
+              key={`contactInfo/skeleton/icon/${i}`}
+              className="flex flex-col justify-center items-center gap-1"
+            >
+              <div className="bg-borderhl/40 rounded-3xl size-15 animate-pulse"></div>
+              <small className="w-15 h-3 rounded-md bg-borderhl/40 animate-pulse"></small>
+            </div>
+          ))}
+        </div>
+        <hr className="border w-full mt-6 border-borderhl/40" />
+        {Array.from({ length: 8 }).map((item, i) => (
+          <div
+            key={`contactInfo/skeleton/list/${i}`}
+            className="flex flex-wrap gap-1 items-center justify-between my-0.5 p-4 rounded-xl transition-all cursor-pointer"
+          >
+            <div className="flex flex-nowrap items-center gap-5">
+              <div className="cursor-pointer bg-borderhl/40 rounded-xl transition-all p-2 size-8 animate-pulse"></div>
+              <p className="w-50 h-6 bg-borderhl/40 animate-pulse"></p>
+            </div>
+            <div className="cursor-pointer bg-borderhl/40 rounded-full transition-all p-2 size-5 animate-pulse"></div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }

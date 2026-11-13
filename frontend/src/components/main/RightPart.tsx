@@ -735,7 +735,6 @@ export default function RightPart({
       {contactInfo && (
         <article className="absolute right-0 top-0 min-w-9/10 max-w-140 sm:min-w-100 lg:min-w-120 sm:max-w-160 h-full z-15 bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)]">
           <ContactInfo
-            contactInfo={contactInfo}
             setContactInfo={setContactInfo}
             optionItem={optionItem}
           />

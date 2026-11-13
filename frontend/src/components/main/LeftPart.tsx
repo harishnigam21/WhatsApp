@@ -38,7 +38,7 @@ export default function LeftPart({
   const dispatch = useAppDispatch();
   return (
     <section
-      className={`${mainLayout.leftpart ? `relative ${!mainLayout.rightpart ? "w-full" : "min-w-90 lg:min-w-115"} min-h-full bg-bgsec/40 border-r border-borderhl/40 z-30 flex flex-col` : "hidden"}`}
+      className={`${mainLayout.leftpart ? `relative ${!mainLayout.rightpart ? "w-full" : "min-w-90 lg:min-w-115"} min-h-full bg-bgsec/40 border-r border-borderhl/40 z-10 flex flex-col` : "hidden"}`}
       onContextMenu={(e) => {
         e.preventDefault();
         setOptions(true);
