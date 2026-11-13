@@ -18,9 +18,11 @@ import { useEffect, useRef } from "react";
 export default function RightPartMenu({
   optionItem,
   setOptions,
+  setContactInfo,
 }: {
   optionItem: { icon: LucideIcon; name: string }[];
   setOptions: React.Dispatch<React.SetStateAction<boolean>>;
+  setContactInfo: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const optionRef = useRef<HTMLOListElement>(null);
   const dispatch = useAppDispatch();
@@ -58,7 +60,14 @@ export default function RightPartMenu({
         </li>
       ))}
       {[
-        { name: "Contact info", icon: Info, onclick: () => {} },
+        {
+          name: "Contact info",
+          icon: Info,
+          onclick: () => {
+            setContactInfo(true);
+            setOptions(false);
+          },
+        },
         {
           name: "Select messages",
           icon: SquareCheck,

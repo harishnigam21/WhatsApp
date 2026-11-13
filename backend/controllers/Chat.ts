@@ -10,7 +10,9 @@ export const getChat = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     //TODO:Check for user in their contact
-    const user = await User.findById(id).select("name pic lastSeen").lean();
+    const user = await User.findById(id)
+      .select("name pic banner phone phoneCode bio lastSeen")
+      .lean();
     if (!user) {
       return res.status(404).json({ message: "No such user found" });
     }
@@ -74,6 +76,10 @@ export const getChat = async (req: AuthRequest, res: Response) => {
       _id: user._id,
       name: user.name,
       pic: user.pic,
+      banner: user.banner,
+      phone: user.phone,
+      phoneCode: user.phoneCode,
+      bio: user.bio,
       lastSeen: user.lastSeen,
       messages,
       status,

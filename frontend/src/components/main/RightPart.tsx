@@ -38,12 +38,9 @@ import {
   addSenderMessage,
   clearSelectedContact,
   clearSelectionFor,
-  deleteMsg,
   MessageType,
   setCachedUrls,
-  setSelectedContactLoading,
   setSelectedFor,
-  setSelectionFor,
 } from "@/redux/slices/ChatSlice";
 import AttachmentSection from "./AttachmentSection";
 import { cleanupOldMedia, saveToDB } from "@/utils/indexedDB";
@@ -550,7 +547,11 @@ export default function RightPart({
               <EllipsisVertical className="size-5" />
             </div>
             {options && (
-              <RightPartMenu optionItem={optionItem} setOptions={setOptions} />
+              <RightPartMenu
+                optionItem={optionItem}
+                setOptions={setOptions}
+                setContactInfo={setContactInfo}
+              />
             )}
           </div>
         </div>

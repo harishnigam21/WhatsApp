@@ -42,7 +42,11 @@ export interface ActiveContact {
 export interface selectedContactType {
   _id: string;
   name: string;
-  pic: string;
+  phone: string;
+  phoneCode: string;
+  pic: string | null;
+  banner: string | null;
+  bio: string;
   lastSeen: Date;
   messages: MessageType[];
   status: boolean;

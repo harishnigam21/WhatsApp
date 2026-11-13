@@ -30,9 +30,10 @@ export default function ContactInfo({
 }) {
   const [viewPic, setViewPic] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [imageloading, setImageLoading] = useState<boolean>(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const picRef = useRef<HTMLImageElement>(null);
-  const userInfo = useAppSelector((store) => store.user.userInfo);
+  const userInfo = useAppSelector((store) => store.chat.selectedContact);
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as HTMLElement;
@@ -74,15 +75,18 @@ export default function ContactInfo({
       {/* view pic */}
       {viewPic && userInfo.pic && (
         <div className="fixed top-0 left-0 w-full h-full bg-bgpri/90 backdrop-blur-sm flex items-center justify-center inset-0 z-40 p-2">
-          <Image
-            ref={picRef}
-            src={userInfo.pic}
-            loading="eager"
-            width={400}
-            height={400}
-            alt="pic view"
-            className="object-cover aspect-square"
-          />
+          <div className="relative aspect-square w-80 max-w-100">
+            <div className="absolute top-0 left-0 size-full bg-borderhl/40 animate-pulse rounded-md"></div>
+            <Image
+              ref={picRef}
+              src={userInfo.pic}
+              loading="eager"
+              fill
+              alt="pic view"
+              className={`object-cover aspect-square ${imageloading && "hidden"} rounded-sm`}
+              onLoad={() => setImageLoading(false)}
+            />
+          </div>
           <X
             size={30}
             className="fixed top-2 right-2 cursor-pointer"
@@ -270,7 +274,7 @@ function ContactInfoSkeleton() {
         </div>
         <div className="cursor-pointer bg-borderhl/40 rounded-full transition-all p-2 size-8 animate-pulse"></div>
       </div>
-      <div className="flex flex-col gap-1 animate-[fromTop_0.3s_ease-in-out] p-4">
+      <div className="flex flex-col gap-1">
         {/* picture, name, number */}
         <div className="flex flex-col items-center-safe p-4 pt-3 gap-2">
           <div className="size-30 rounded-full overflow-hidden relative">
@@ -295,13 +299,15 @@ function ContactInfoSkeleton() {
         {Array.from({ length: 8 }).map((item, i) => (
           <div
             key={`contactInfo/skeleton/list/${i}`}
-            className="flex flex-wrap gap-1 items-center justify-between my-0.5 p-4 rounded-xl transition-all cursor-pointer"
+            className="flex flex-nowrap gap-3 items-center justify-between p-4 w-full rounded-xl transition-all cursor-pointer overflow-x-hidden"
           >
-            <div className="flex flex-nowrap items-center gap-5">
+            <div className="flex items-center gap-3 grow">
               <div className="cursor-pointer bg-borderhl/40 rounded-xl transition-all p-2 size-8 animate-pulse"></div>
-              <p className="w-50 h-6 bg-borderhl/40 animate-pulse"></p>
+              <p className="w-30 h-10 grow bg-borderhl/40 animate-pulse"></p>
             </div>
-            <div className="cursor-pointer bg-borderhl/40 rounded-full transition-all p-2 size-5 animate-pulse"></div>
+            {i == 0 && (
+              <div className="cursor-pointer bg-borderhl/40 rounded-full transition-all p-2 size-5 animate-pulse"></div>
+            )}
           </div>
         ))}
       </div>
