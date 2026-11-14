@@ -1,6 +1,8 @@
 //mongoose package, this will help us to interact with our mongo DB
 import mongoose from "mongoose";
 import { envList } from "../envConfig";
+import { mongooseLoggerPlugin } from "../utils/mongooseLogger";
+mongoose.plugin(mongooseLoggerPlugin);
 
 const connectDB = async () => {
   try {
