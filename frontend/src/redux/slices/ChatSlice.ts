@@ -49,6 +49,7 @@ export interface selectedContactType {
   bio: string;
   lastSeen: Date;
   messages: MessageType[];
+  next: string;
   status: boolean;
 }
 interface initialStateType {
@@ -434,6 +435,18 @@ const ChatSlice = createSlice({
         };
       }
     },
+    nextMessages: (
+      state,
+      action: PayloadAction<{ messages: MessageType[]; next: string }>,
+    ) => {
+      const messages = action.payload.messages;
+      if (!state.selectedContact) return;
+      state.selectedContact.messages = [
+        ...messages,
+        ...state.selectedContact.messages,
+      ];
+      state.selectedContact.next = action.payload.next;
+    },
   },
 });
 export const {
@@ -460,5 +473,6 @@ export const {
   unstarMsg,
   deleteMsg,
   deleteMsgR,
+  nextMessages,
 } = ChatSlice.actions;
 export default ChatSlice.reducer;

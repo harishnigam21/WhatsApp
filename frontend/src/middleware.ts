@@ -10,7 +10,6 @@ export async function middleware(request: NextRequest) {
   const jwt = request.cookies.get("jwt")?.value;
 
   let response = NextResponse.next();
-
   if (!(await isAccessTokenValid(actk)) && jwt) {
     try {
       const refreshRes = await fetch(

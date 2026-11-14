@@ -49,7 +49,6 @@ export default function MessageList() {
       {},
     );
   }, [selectedContact?.messages]);
-
   if (!selectedContact) return null;
 
   useEffect(() => {
@@ -64,11 +63,13 @@ export default function MessageList() {
       observer.disconnect();
     };
   }, []);
+  
   return (
     <section
       ref={sectionRef}
       className="flex flex-col gap-1 w-full py-4 sm:py-8 grow justify-end-safe"
     >
+      
       {Object.entries(messages).map(([date, msgs]) => (
         <div
           key={`selectedMessage/date/${date}`}

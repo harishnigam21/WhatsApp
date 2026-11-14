@@ -119,6 +119,7 @@ export default function AttachItems({
                 accept={item.input.accept}
                 multiple={item.input.mutiple}
                 onChange={(e) => {
+                  setShowAttachOptions(false);
                   const cfiles = e.target.files;
                   if (cfiles && cfiles.length > 0) {
                     const existingFile = files.map((Item) => Item.file.name);

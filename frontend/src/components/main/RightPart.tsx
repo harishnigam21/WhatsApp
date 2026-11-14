@@ -26,6 +26,8 @@ import {
   Forward,
   Download,
   LoaderCircle,
+  ChevronUp,
+  ChevronsUp,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
@@ -53,6 +55,7 @@ import RightPartMenu from "./RightPartMenu";
 import Loading from "@/app/(main)/loading";
 import { handleDeleteMessage } from "@/services/MessageDelete";
 import ContactInfo from "./ContactInfo";
+import { NextMessages } from "@/services/NextMessages";
 
 export default function RightPart({
   children,
@@ -408,6 +411,56 @@ export default function RightPart({
   };
   const [options, setOptions] = useState<boolean>(false);
   const { selectedFor, selectionFor } = useAppSelector((store) => store.chat);
+
+  const { handleNextMessages, loading: nextLoading } = NextMessages();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const hasUserScrolledForLoad = useRef(false);
+
+  useEffect(() => {
+    hasUserScrolledForLoad.current = false;
+  }, []);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    const scrollContainer = MessageAreaRef.current;
+
+    if (!target || !scrollContainer) return;
+    const enableFetching = () => {
+      hasUserScrolledForLoad.current = true;
+    };
+
+    scrollContainer.addEventListener("wheel", enableFetching, { once: true });
+    scrollContainer.addEventListener("touchmove", enableFetching, {
+      once: true,
+    });
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        // Only trigger if the user has actually scrolled
+        if (
+          entry.isIntersecting &&
+          !nextLoading &&
+          hasUserScrolledForLoad.current
+        ) {
+          handleNextMessages();
+        }
+      },
+      {
+        root: scrollContainer,
+        threshold: 0.1,
+      },
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+      scrollContainer.removeEventListener("wheel", enableFetching);
+      scrollContainer.removeEventListener("touchmove", enableFetching);
+    };
+  }, [nextLoading, handleNextMessages]);
+
   useEffect(() => {
     const container = MessageAreaRef.current;
     const messages = selectedContact?.messages;
@@ -439,7 +492,7 @@ export default function RightPart({
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [selectedContact, scrollToSection]);
+  }, [scrollToSection, selectedContact?.bio]);
 
   useEffect(() => {
     if (input.trim().length > 0) {
@@ -475,6 +528,7 @@ export default function RightPart({
         <div
           className="flex flex-nowrap gap-3 items-center whitespace-nowrap cursor-pointer grow"
           id="forContactInfo"
+          title="Contact info"
           onClick={() => {
             setContactInfo(true);
           }}
@@ -570,6 +624,21 @@ export default function RightPart({
             ref={MessageAreaRef}
             className="grow overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-borderhl h-10 flex flex-col justify-end-safe"
           >
+            {nextLoading ? (
+              <div className="self-center mt-4">
+                <LoaderCircle className="animate-spin text-[color-mix(in_srgb,var(--color-bgpri)_50%,var(--color-pri)_50%)]" />
+              </div>
+            ) : (
+              selectedContact.next && (
+                <div
+                  ref={loadMoreRef}
+                  className="py-0.5 px-2 whitespace-nowrap self-center text-xs cursor-pointer flex flex-nowrap items-center mt-4"
+                >
+                  <span>Load More</span>
+                  <ChevronsUp className="animate-bounce -mb-1 ml-1" strokeWidth={1} size={16} />
+                </div>
+              )
+            )}
             {children}
           </article>
           {/* input field */}
