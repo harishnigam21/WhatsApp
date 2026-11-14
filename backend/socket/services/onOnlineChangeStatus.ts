@@ -8,6 +8,7 @@ export const onOnlineChangeStatus = async (userId: string, io: Server) => {
     const notDeliveredMessages = await NotDelivered.find({
       receiver_id: userId,
     }).lean();
+    if (notDeliveredMessages.length === 0) return;
     if (notDeliveredMessages) {
       const messageIds = notDeliveredMessages.map((item) => item.message_id);
       await Message.updateMany(

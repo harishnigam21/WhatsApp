@@ -5,14 +5,32 @@ import User from "../models/User";
 import { getServerError } from "../utils/serverError";
 import { userSocketIds } from "../server";
 import mongoose from "mongoose";
+import redisConnect from "../config/redis_connect";
 
 export const getChat = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const { cursor, limit } = req.query as { cursor: string; limit: number };
     //TODO:Check for user in their contact
-    const user = await User.findById(id)
-      .select("name pic banner phone phoneCode bio lastSeen")
-      .lean();
+    const lm = limit ? limit : 20;
+    let user = null;
+    const getUser = await redisConnect.get(`WhatsAppUserInfo-${id}`);
+    if (getUser) {
+      user = JSON.parse(getUser);
+    } else {
+      const userDetail = await User.findById(id)
+        .select("name pic banner phone phoneCode bio lastSeen")
+        .lean();
+      if (userDetail) {
+        user = userDetail;
+        await redisConnect.set(
+          `WhatsAppUserInfo-${userDetail._id.toString()}`,
+          JSON.stringify(userDetail),
+          "EX",
+          24 * 60 * 60,
+        );
+      }
+    }
     if (!user) {
       return res.status(404).json({ message: "No such user found" });
     }
@@ -21,6 +39,7 @@ export const getChat = async (req: AuthRequest, res: Response) => {
     const messages = await Message.aggregate([
       {
         $match: {
+          ...(cursor && { createdAt: { $lte: new Date(cursor) } }),
           deletedForEveryone: false,
           inTrash: { $nin: [currentUserId] },
           $or: [
@@ -28,6 +47,13 @@ export const getChat = async (req: AuthRequest, res: Response) => {
             { sender_id: targetId, receiver_id: currentUserId },
           ],
         },
+      },
+
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $limit: lm + 1,
       },
       {
         $sort: { createdAt: 1 },
@@ -71,19 +97,28 @@ export const getChat = async (req: AuthRequest, res: Response) => {
         },
       },
     ]);
+    let nextCursor = null;
+    if (messages.length > lm) {
+      const temp = messages.shift();
+      nextCursor = (temp.createdAt as Date).toISOString();
+    }
     const status = userSocketIds.has(id);
-    return res.status(200).json({
-      _id: user._id,
-      name: user.name,
-      pic: user.pic,
-      banner: user.banner,
-      phone: user.phone,
-      phoneCode: user.phoneCode,
-      bio: user.bio,
-      lastSeen: user.lastSeen,
-      messages,
-      status,
-    });
+    const data = cursor
+      ? { messages, next: nextCursor }
+      : {
+          _id: user._id,
+          name: user.name,
+          pic: user.pic,
+          banner: user.banner,
+          phone: user.phone,
+          phoneCode: user.phoneCode,
+          bio: user.bio,
+          lastSeen: user.lastSeen,
+          messages,
+          next: nextCursor,
+          status,
+        };
+    return res.status(200).json(data);
   } catch (error) {
     getServerError(res, error, "getChat");
   }
