@@ -183,6 +183,14 @@ export const socketMiddleware: Middleware =
                   extra: eventResponse.extraData!,
                 }),
               );
+              const scrollContainer =
+                document.getElementById("scrollToMessage");
+              if (scrollContainer) {
+                scrollContainer.scrollIntoView({
+                  behavior: "smooth",
+                  block: "end",
+                });
+              }
             } else {
               toast.error(eventResponse.message!);
             }

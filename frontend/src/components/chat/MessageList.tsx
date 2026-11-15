@@ -90,7 +90,7 @@ export default function MessageList() {
         </div>
       ))}
 
-      <div id="scrollToMessage"></div>
+      <div id="scrollToMessage" style={{ scrollMarginBottom: '100px' }}></div>
     </section>
   );
 }
