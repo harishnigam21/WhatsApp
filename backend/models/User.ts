@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { InferSchemaType } from "mongoose";
 const userSchema = new mongoose.Schema(
   {
     fid: {
@@ -47,5 +47,6 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+export type IUser = InferSchemaType<typeof userSchema>;
 userSchema.index({ phone: 1, phoneCode: 1 }, { unique: true });
 export default mongoose.model("users", userSchema);

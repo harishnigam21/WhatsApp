@@ -9,6 +9,7 @@ import { convertToDataUri } from "../utils/convertToDataUri.js";
 import { eAxios } from "../utils/axios.js";
 import { app } from "../utils/firebase.js";
 import { getAuth } from "firebase-admin/auth";
+import redisConnect from "../config/redis_connect.js";
 interface RegistrationFiles {
   pic?: Express.Multer.File[];
   banner?: Express.Multer.File[];
@@ -98,7 +99,23 @@ export const getUser = async (req: AuthRequest, res: Response) => {
 };
 export const getUserMeta = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const getUser = await User.findById(id).select("phone phoneCode").lean();
+  const fromRedis = await redisConnect.get(`WhatsAppUserInfo-${id}`);
+  let getUser: { phoneCode: string; phone: string } | null = null;
+  if (fromRedis) {
+    getUser = JSON.parse(fromRedis);
+  } else {
+    const UserData = await User.findById(id).lean();
+    if (!UserData) {
+      return res.redirect("/");
+    }
+    await redisConnect.set(
+      `WhatsAppUserInfo-${UserData._id}`,
+      JSON.stringify(UserData),
+      "EX",
+      7 * 24 * 60 * 60,
+    );
+    getUser = UserData;
+  }
   return res.status(200).json({
     sender: `${req.user!.phoneCode + req.user!.phone}`,
     receiver: getUser ? `${getUser.phoneCode + getUser.phone}` : "unKnown",

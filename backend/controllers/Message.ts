@@ -27,7 +27,7 @@ export const sendMsg = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     getServerError(res, error, "sendMsg Controller");
   }
-};
+};//not using this, currently using socket to handle send message
 export const startMsg = async (req: AuthRequest, res: Response) => {
   try {
     const msgId = req.params.id;
