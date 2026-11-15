@@ -59,7 +59,7 @@ io.on("connection", async (socket) => {
   //TODO:later filter from their official contact list and send this event only to their contact
   io.emit("joinedUser", { userId });
   //sendMessage
-  sendMessage(io, socket,userId);
+  sendMessage(io, socket);
   // mark seen all``
   seenAll(io, socket);
   // mark seen for one message
