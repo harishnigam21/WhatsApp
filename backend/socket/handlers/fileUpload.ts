@@ -5,6 +5,9 @@ import Message from "../../models/Message";
 import { userSocketIds } from "../../server";
 import NotDelivered from "../../models/NotDelivered";
 import { formatBytes } from "../../utils/formatBytes";
+import redisConnect from "../../config/redis_connect";
+import User, { IUser } from "../../models/User";
+import Conversation from "../../models/Conversation";
 
 // Replace this with your actual database message service.
 
@@ -168,19 +171,92 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
         ) {
           return ackError(ack, "Uploaded asset metadata could not be verified");
         }
-        let existingMessage = null;
-        if (payload.parent) {
-          existingMessage = await Message.findOne({
-            _id: payload.parent,
-            sender_id: payload.sender_id,
-            receiver_id: payload.receiver_id,
+
+        const receiverSocket = userSocketIds.get(payload.receiver_id);
+        type CachedUser = Omit<
+          IUser,
+          "refreshToken" | "fid" | "createdAt" | "updatedAt"
+        > & {
+          _id: string;
+        };
+        const formatAndCacheUser = async (
+          userDoc: any,
+        ): Promise<CachedUser> => {
+          const formatted: CachedUser = {
+            _id: userDoc._id.toString(),
+            name: userDoc.name,
+            email: userDoc.email,
+            phone: userDoc.phone,
+            phoneCode: userDoc.phoneCode,
+            pic: userDoc.pic || null,
+            banner: userDoc.banner || null,
+            bio: userDoc.bio,
+            lastSeen: userDoc.lastSeen,
+          };
+
+          await redisConnect.set(
+            `WhatsAppUserInfo-${formatted._id}`,
+            JSON.stringify(formatted),
+            "EX",
+            7 * 24 * 60 * 60,
+          );
+
+          return formatted;
+        };
+        const getUsersFromCacheOrDB = async (userIds: string[]) => {
+          const uniqueIds = [...new Set(userIds.map((id) => id.toString()))];
+          const keys = uniqueIds.map((id) => `WhatsAppUserInfo-${id}`);
+          const cachedList = await redisConnect.mget(keys);
+
+          const userMap = new Map<string, CachedUser>();
+          const missingIds: string[] = [];
+
+          uniqueIds.forEach((id, idx) => {
+            if (cachedList[idx]) {
+              userMap.set(id, JSON.parse(cachedList[idx]!));
+            } else {
+              missingIds.push(id);
+            }
           });
 
-          if (!existingMessage) {
-            return ackError(ack, "Parent message not found or unauthorized.");
+          if (missingIds.length > 0) {
+            const dbUsers = await User.find({
+              _id: { $in: missingIds },
+            }).lean();
+            await Promise.all(
+              dbUsers.map(async (u) => {
+                const cached = await formatAndCacheUser(u);
+                userMap.set(cached._id, cached);
+              }),
+            );
+          }
+
+          return userMap;
+        };
+        if (payload.parent) {
+          const cachedParent = await redisConnect.get(
+            `OnGoingUploadMessage-${payload.parent}`,
+          );
+
+          if (!cachedParent) {
+            const exists = await Message.exists({
+              _id: payload.parent,
+              sender_id: payload.sender_id,
+              receiver_id: payload.receiver_id,
+            });
+            if (!exists) {
+              return ackError(ack, "Parent message not found or unauthorized.");
+            }
+          } else {
+            const parsed = JSON.parse(cachedParent);
+            if (
+              parsed.sender_id.toString() !== payload.sender_id.toString() ||
+              parsed.receiver_id.toString() !== payload.receiver_id.toString()
+            ) {
+              return ackError(ack, "Unauthorized parent message access.");
+            }
           }
         }
-        const receiverSocket = userSocketIds.get(payload.receiver_id);
 
         // Validate recipient, conversation membership, parent message,
         // and authorization inside this service as well.
@@ -197,11 +273,13 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
           tags: payload.tags,
           message: payload.message,
         };
+
         let messageDoc;
-        if (existingMessage) {
+        const isNewMessage = !payload.parent;
+        if (!isNewMessage) {
           messageDoc = await Message.findOneAndUpdate(
             {
-              _id: existingMessage._id,
+              _id: payload.parent,
             },
             {
               $push: {
@@ -221,35 +299,65 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
             return ackError(ack, "Could not update the parent message.");
           }
         } else {
-          messageDoc = await Message.create({
+          const created = await Message.create({
             sender_id: payload.sender_id,
             receiver_id: payload.receiver_id,
             content: payload.message ?? "",
             attachments: [attachment],
             seen: receiverSocket ? "semiseen" : "unseen",
           });
+          messageDoc = created.toObject();
         }
-        if (!receiverSocket) {
-          await NotDelivered.create({
-            sender_id: messageDoc.sender_id,
-            receiver_id: messageDoc.receiver_id,
-            message_id: messageDoc._id,
-          });
-        }
-        const populateMessage = await messageDoc.populate([
-          {
-            path: "sender_id",
-            select: "_id name pic lastSeen",
-          },
-          {
-            path: "receiver_id",
-            select: "_id name pic lastSeen",
-          },
+        const sortedParticipants = [
+          payload.sender_id.toString(),
+          payload.receiver_id.toString(),
+        ].sort();
+        const [, userMap] = await Promise.all([
+          redisConnect.set(
+            `OnGoingUploadMessage-${messageDoc._id}`,
+            JSON.stringify(messageDoc),
+            "EX",
+            60 * 60,
+          ),
+          getUsersFromCacheOrDB([payload.sender_id, payload.receiver_id]),
+          !receiverSocket && isNewMessage
+            ? NotDelivered.updateOne(
+                { message_id: messageDoc._id },
+                {
+                  $setOnInsert: {
+                    sender_id: messageDoc.sender_id,
+                    receiver_id: messageDoc.receiver_id,
+                    message_id: messageDoc._id,
+                  },
+                },
+                { upsert: true },
+              )
+            : Promise.resolve(),
+          Conversation.findOneAndUpdate(
+            { participants: sortedParticipants } as any,
+            {
+              $set: { lastMessage: messageDoc._id },
+              $setOnInsert: {
+                participants: sortedParticipants,
+                [`unreadCounts.${payload.sender_id}`]: 0,
+              },
+              ...(isNewMessage && {
+                $inc: { [`unreadCounts.${payload.receiver_id}`]: 1 },
+              }),
+            },
+            { upsert: true },
+          ),
         ]);
+
+        const populateMessage = {
+          ...messageDoc,
+          sender_id: userMap.get(payload.sender_id.toString()),
+          receiver_id: userMap.get(payload.receiver_id.toString()),
+        };
         const messageData = {
           _id: messageDoc._id,
-          sender_id: messageDoc.sender_id._id,
-          receiver_id: messageDoc.receiver_id._id,
+          sender_id: messageDoc.sender_id.toString(),
+          receiver_id: messageDoc.receiver_id.toString(),
           content: messageDoc.content,
           seen: messageDoc.seen,
           attachments: messageDoc.attachments,
