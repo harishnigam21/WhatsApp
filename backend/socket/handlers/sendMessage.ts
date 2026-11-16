@@ -4,6 +4,7 @@ import Message from "../../models/Message";
 import { userSocketIds } from "../../server";
 import redisConnect from "../../config/redis_connect";
 import { IUser } from "../../models/User";
+import Conversation from "../../models/Conversation";
 
 export function sendMessage(io: Server, socket: Socket) {
   const authenticatedUserId = socket.data.userId as string | undefined;
@@ -165,8 +166,29 @@ export function sendMessage(io: Server, socket: Socket) {
       const toPopulate: { path: "sender_id" | "receiver_id" }[] = [];
       if (!populatedUsers.sender_id) toPopulate.push({ path: "sender_id" });
       if (!populatedUsers.receiver_id) toPopulate.push({ path: "receiver_id" });
-
+      const sortedParticipants = [
+        sender_id.toString(),
+        receiver_id.toString(),
+      ].sort();
       await Promise.all([
+        Conversation.findOneAndUpdate(
+          { participants: sortedParticipants },
+          {
+            $set: {
+              lastMessage: message._id,
+            },
+            $setOnInsert: {
+              participants: sortedParticipants,
+              [`unreadCounts.${sender_id}`]: 0,
+            },
+            ...(message.seen !== "seen" && {
+              $inc: {
+                [`unreadCounts.${receiver_id}`]: 1,
+              },
+            }),
+          },
+          { upsert: true, returnDocument: "after" },
+        ),
         !receiverSocket
           ? NotDelivered.create({
               sender_id,

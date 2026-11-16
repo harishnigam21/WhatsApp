@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { InferSchemaType } from "mongoose";
 const messageSchema = new mongoose.Schema(
   {
     sender_id: {
@@ -72,5 +72,6 @@ const messageSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+export type IMessage = InferSchemaType<typeof messageSchema>;
 messageSchema.index({ createdAt: 1 });
 export default mongoose.model("messages", messageSchema);

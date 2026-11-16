@@ -38,8 +38,8 @@ export default function Shell({ dataChat }: { dataChat: selectedContactType }) {
       sendSocketRequest({
         event: "seenAll",
         data: {
-          sender_id: user,
-          receiver_id: dataChat._id,
+          sender_id: dataChat._id,
+          receiver_id: user,
         },
       }),
     );
