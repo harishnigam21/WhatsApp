@@ -1,5 +1,5 @@
 import User from "../models/User.js";
-import Message from "../models/Message.js";
+import Message, { IMessage } from "../models/Message.js";
 import mongoose from "mongoose";
 import { Request, Response } from "express";
 import { AuthRequest } from "../types/AuthRequest.js";
@@ -10,6 +10,7 @@ import { eAxios } from "../utils/axios.js";
 import { app } from "../utils/firebase.js";
 import { getAuth } from "firebase-admin/auth";
 import redisConnect from "../config/redis_connect.js";
+import Conversation from "../models/Conversation.js";
 interface RegistrationFiles {
   pic?: Express.Multer.File[];
   banner?: Express.Multer.File[];
@@ -152,113 +153,53 @@ export const getContacts = async (req: AuthRequest, res: Response) => {
 export const getActiveContacts = async (req: AuthRequest, res: Response) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user!._id);
-    const contactList = await Message.aggregate([
-      // 1. Find only messages involving the current user
-      {
-        $match: {
-          deletedForEveryone: false,
-          inTrash: { $nin: [userId] },
-          $or: [{ sender_id: userId }, { receiver_id: userId }],
-        },
-      },
-      // 2. Sort by newest first
-      { $sort: { createdAt: -1 } },
-      // 3. Create a unique room/conversation string key between the two users
-      {
-        $addFields: {
-          conversationWith: {
-            $cond: {
-              if: {
-                $eq: ["$sender_id", new mongoose.Types.ObjectId(req.user?._id)],
-              },
-              then: "$receiver_id",
-              else: "$sender_id",
-            },
-          },
-        },
-      },
-      // 4. Exclude self-chats
-      {
-        $match: {
-          conversationWith: { $ne: new mongoose.Types.ObjectId(req.user?._id) },
-        },
-      },
-      // 5. Group by the contact person and grab the first (newest) message document
-      {
-        $group: {
-          _id: "$conversationWith",
-          lastMessage: { $first: "$$ROOT" },
-          unread: {
-            $sum: {
-              $cond: {
-                if: {
-                  $and: [
-                    {
-                      $eq: ["$receiver_id", userId],
-                    },
-                    { $ne: ["$seen", "seen"] },
-                    { $eq: ["$deletedForEveryone", false] },
-                  ],
-                },
-                then: 1,
-                else: 0,
-              },
-            },
-          },
-        },
-      },
-      // 6. Look up the contact's user profile data from the users collection
-      {
-        $lookup: {
-          from: "users", // Make sure this matches your MongoDB users collection name
-          localField: "_id",
-          foreignField: "_id",
-          as: "profile",
-        },
-      },
-      { $unwind: "$profile" },
-      {
-        $addFields: {
-          isDeletedForMe: {
-            $in: [userId, { $ifNull: ["$lastMessage.deletedFor", []] }],
-          },
-        },
-      },
-      // 7. Format the output to look exactly like your required object structure
-      {
-        $project: {
-          _id: "$profile._id",
-          name: "$profile.name",
-          pic: "$profile.pic",
-          lastSeen: "$profile.lastSeen",
-          unread: "$unread",
-          lastMessage: {
-            _id: "$lastMessage._id",
-            sender_id: "$lastMessage.sender_id",
-            receiver_id: "$lastMessage.receiver_id",
-            content: {
-              $cond: {
-                if: "$isDeletedForMe",
-                then: "This message was deleted",
-                else: "$lastMessage.content",
-              },
-            },
-            seen: "$lastMessage.seen",
-            attachments: {
-              $cond: {
-                if: "$isDeletedForMe",
-                then: [],
-                else: "$lastMessage.attachments",
-              },
-            },
-            deletedFor: "$isDeletedForMe",
-            createdAt: "$lastMessage.createdAt",
-          },
-        },
-      },
-      // 8. Sort the final contact list by the latest message time
-      { $sort: { "lastMessage.createdAt": -1 } },
-    ]);
+    const list = await Conversation.find({ participants: userId })
+      .populate({
+        path: "participants",
+        match: { _id: { $ne: userId } },
+        select: "_id name pic lastSeen",
+      })
+      .populate(
+        "lastMessage",
+        "_id sender_id receiver_id content seen attachments deletedForEveryone deletedFor inTrash createdAt",
+      )
+      .sort({ updatedAt: -1 })
+      .lean();
+    const contactList = list.map((item) => {
+      const lastMessage = item.lastMessage as unknown as IMessage;
+      let updatedLastMessage = null;
+      const { inTrash, deletedForEveryone, deletedFor, ...other } = lastMessage;
+      const isInTrash = inTrash?.some((id) => id.equals(userId)) ?? false;
+
+      if (!deletedForEveryone && !isInTrash) {
+        const isdeletedFor =
+          deletedFor?.some((id) => id.equals(userId)) ?? false;
+        if (isdeletedFor) {
+          updatedLastMessage = {
+            ...other,
+            content: "This message was deleted",
+            attachments: [],
+            deletedFor: true,
+          };
+        } else {
+          updatedLastMessage = { ...other, deletedFor: false };
+        }
+      } else {
+        updatedLastMessage = {
+          _id: "start messaging",
+          sender_id: "start messaging",
+          receiver_id: "start messaging",
+          content: "start messaging...",
+          seen: "start messaging",
+          attachments: [],
+          deletedFor: true,
+          createdAt: new Date(),
+        };
+      }
+      const user = item.participants[0];
+      const unread = item.unreadCounts[userId.toString()];
+      return { ...user, unread, lastMessage: updatedLastMessage };
+    });
     return res.status(200).json(contactList);
   } catch (error) {
     getServerError(res, error, "getActiveContacts Controller");
