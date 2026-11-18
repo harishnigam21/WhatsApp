@@ -4,6 +4,7 @@ import { Response } from "express";
 import { getServerError } from "../utils/serverError";
 import mongoose, { AnyBulkWriteOperation } from "mongoose";
 import { io, userSocketIds } from "../server";
+import Conversation from "../models/Conversation";
 
 export const sendMsg = async (req: AuthRequest, res: Response) => {
   try {
@@ -27,7 +28,7 @@ export const sendMsg = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     getServerError(res, error, "sendMsg Controller");
   }
-};//not using this, currently using socket to handle send message
+}; //not using this, currently using socket to handle send message
 export const startMsg = async (req: AuthRequest, res: Response) => {
   try {
     const msgId = req.params.id;
@@ -160,48 +161,73 @@ export const deleteMsg = async (req: AuthRequest, res: Response) => {
 
     await Message.bulkWrite(msgBulk, { session });
     await session.commitTransaction();
-    const updatedMsg = (await Message.aggregate([
+    const [messagesAgg] = await Message.aggregate([
       {
-        $match: {
-          _id: { $in: objectIds },
-          $or: [{ sender_id: userId }, { receiver_id: userId }],
-        },
-      },
-      {
-        $addFields: {
-          isDeletedForMe: {
-            $in: [userId, { $ifNull: ["$deletedFor", []] }],
-          },
-          inTrash: {
-            $in: [userId, { $ifNull: ["$inTrash", []] }],
-          },
-        },
-      },
-      {
-        $project: {
-          sender_id: 1,
-          receiver_id: 1,
-          deletedForEveryone: 1,
-          deletedFor: "$isDeletedForMe",
-          attachments: {
-            $cond: {
-              if: "$isDeletedForMe",
-              then: [],
-              else: "$attachments",
+        $facet: {
+          updatedMsg: [
+            {
+              $match: {
+                _id: { $in: objectIds },
+                $or: [{ sender_id: userId }, { receiver_id: userId }],
+              },
             },
-          },
-          content: {
-            $cond: {
-              if: "$isDeletedForMe",
-              then: "This message was deleted",
-              else: "$content",
+            {
+              $addFields: {
+                isDeletedForMe: {
+                  $in: [userId, { $ifNull: ["$deletedFor", []] }],
+                },
+                inTrash: {
+                  $in: [userId, { $ifNull: ["$inTrash", []] }],
+                },
+              },
             },
-          },
-          inTrash: "$inTrash",
-          seen: 1,
+            {
+              $project: {
+                sender_id: 1,
+                receiver_id: 1,
+                deletedForEveryone: 1,
+                deletedFor: "$isDeletedForMe",
+                attachments: {
+                  $cond: {
+                    if: "$isDeletedForMe",
+                    then: [],
+                    else: "$attachments",
+                  },
+                },
+                content: {
+                  $cond: {
+                    if: "$isDeletedForMe",
+                    then: "This message was deleted",
+                    else: "$content",
+                  },
+                },
+                inTrash: "$inTrash",
+                seen: 1,
+              },
+            },
+          ],
+          lastMsg: [
+            {
+              $match: {
+                $or: [{ sender_id: userId }, { receiver_id: userId }],
+                deletedFor: { $ne: userId },
+                inTrash: { $ne: userId },
+              },
+            },
+            { $sort: { createdAt: -1 } },
+            { $limit: 1 },
+            {
+              $project: {
+                _id: 1,
+                sender_id: 1,
+                receiver_id: 1,
+              },
+            },
+          ],
         },
       },
-    ])) as {
+    ]);
+    const updatedMsg = messagesAgg.updatedMsg as {
       _id: string;
       deletedForEveryone: boolean;
       deletedFor: boolean;
@@ -212,6 +238,26 @@ export const deleteMsg = async (req: AuthRequest, res: Response) => {
       attachments: any[];
       seen: "seen" | "unseen" | "semiseen";
     }[];
+    const lastMsg = messagesAgg.lastMsg[0] as {
+      _id: string;
+      receiver_id: string;
+      sender_id: string;
+    };
+    if (lastMsg) {
+      const sortedParticipants: any[] = [
+        lastMsg.sender_id.toString(),
+        lastMsg.receiver_id.toString(),
+      ].sort();
+      await Conversation.findOneAndUpdate(
+        { participants: sortedParticipants },
+        {
+          $set: {
+            [`lastMessage.${userId.toString()}`]: lastMsg._id,
+            [`unreadCounts.${userId.toString()}`]: 0,
+          },
+        },
+      );
+    }
     let forDeletor: {
       _id: string;
       deletedForEveryone: boolean;
