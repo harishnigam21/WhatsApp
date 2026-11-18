@@ -166,25 +166,34 @@ export const getActiveContacts = async (req: AuthRequest, res: Response) => {
       .sort({ updatedAt: -1 })
       .lean();
     const contactList = list.map((item) => {
-      const lastMessage = item.lastMessage as unknown as IMessage;
+      const lastMessage = item.lastMessage as unknown as Map<string, IMessage>;
       let updatedLastMessage = null;
-      const { inTrash, deletedForEveryone, deletedFor, ...other } = lastMessage;
-      const isInTrash = inTrash?.some((id) => id.equals(userId)) ?? false;
-
-      if (!deletedForEveryone && !isInTrash) {
-        const isdeletedFor =
-          deletedFor?.some((id) => id.equals(userId)) ?? false;
-        if (isdeletedFor) {
-          updatedLastMessage = {
-            ...other,
-            content: "This message was deleted",
-            attachments: [],
-            deletedFor: true,
-          };
-        } else {
-          updatedLastMessage = { ...other, deletedFor: false };
+      try {
+        const particularUserLM = lastMessage.get(userId.toString());
+        if (!particularUserLM) {
+          throw new Error("no last message found");
         }
-      } else {
+        const { inTrash, deletedForEveryone, deletedFor, ...other } =
+          particularUserLM;
+        const isInTrash = inTrash?.some((id) => id.equals(userId)) ?? false;
+
+        if (particularUserLM && !deletedForEveryone && !isInTrash) {
+          const isdeletedFor =
+            deletedFor?.some((id) => id.equals(userId)) ?? false;
+          if (isdeletedFor) {
+            updatedLastMessage = {
+              ...other,
+              content: "This message was deleted",
+              attachments: [],
+              deletedFor: true,
+            };
+          } else {
+            updatedLastMessage = { ...other, deletedFor: false };
+          }
+        } else {
+          throw new Error("start new messaging");
+        }
+      } catch (error) {
         updatedLastMessage = {
           _id: "start messaging",
           sender_id: "start messaging",
@@ -196,6 +205,7 @@ export const getActiveContacts = async (req: AuthRequest, res: Response) => {
           createdAt: new Date(),
         };
       }
+
       const user = item.participants[0];
       const unread = item.unreadCounts[userId.toString()];
       return { ...user, unread, lastMessage: updatedLastMessage };

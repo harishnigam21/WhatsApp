@@ -175,7 +175,8 @@ export function sendMessage(io: Server, socket: Socket) {
           { participants: sortedParticipants },
           {
             $set: {
-              lastMessage: message._id,
+              [`lastMessage.${sender_id.toString()}`]: message._id,
+              [`lastMessage.${receiver_id.toString()}`]: message._id,
             },
             $setOnInsert: {
               participants: sortedParticipants,

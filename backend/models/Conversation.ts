@@ -10,8 +10,10 @@ const conversationSchema = new Schema(
       },
     ],
     lastMessage: {
-      type: Schema.Types.ObjectId,
-      ref: "messages", // Points directly to the Message document
+      type: Map,
+      of: Schema.Types.ObjectId,
+      ref: "messages",
+      default: {},
     },
     unreadCounts: {
       type: Map,

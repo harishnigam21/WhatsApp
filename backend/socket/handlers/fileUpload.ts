@@ -336,7 +336,11 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
           Conversation.findOneAndUpdate(
             { participants: sortedParticipants } as any,
             {
-              $set: { lastMessage: messageDoc._id },
+              $set: {
+                [`lastMessage.${payload.sender_id.toString()}`]: messageDoc._id,
+                [`lastMessage.${payload.receiver_id.toString()}`]:
+                  messageDoc._id,
+              },
               $setOnInsert: {
                 participants: sortedParticipants,
                 [`unreadCounts.${payload.sender_id}`]: 0,
