@@ -17,7 +17,8 @@ const conversationSchema = new Schema(
     },
     unreadCounts: {
       type: Map,
-      of: Number,
+      of: [Schema.Types.ObjectId],
+      ref: "messages",
       default: {},
     },
   },

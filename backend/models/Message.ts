@@ -74,4 +74,5 @@ const messageSchema = new mongoose.Schema(
 );
 export type IMessage = InferSchemaType<typeof messageSchema>;
 messageSchema.index({ createdAt: 1 });
+messageSchema.index({ sender_id: 1, receiver_id: 1, createdAt: -1 });
 export default mongoose.model("messages", messageSchema);

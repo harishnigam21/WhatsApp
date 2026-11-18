@@ -346,7 +346,9 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
                 [`unreadCounts.${payload.sender_id}`]: 0,
               },
               ...(isNewMessage && {
-                $inc: { [`unreadCounts.${payload.receiver_id}`]: 1 },
+                $addToSet: {
+                  [`unreadCounts.${payload.receiver_id}`]: messageDoc._id,
+                },
               }),
             },
             { upsert: true },

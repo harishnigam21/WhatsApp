@@ -76,8 +76,10 @@ export const unStartMsg = async (req: AuthRequest, res: Response) => {
   }
 };
 export const deleteMsg = async (req: AuthRequest, res: Response) => {
+  const selectedContact = req.params.id as string;
   const msgIds = req.body.ids as string[];
   const userId = new mongoose.Types.ObjectId(req.user!._id);
+  const scId = new mongoose.Types.ObjectId(selectedContact);
   const objectIds = msgIds.map((id) => new mongoose.Types.ObjectId(id));
   const session = await mongoose.startSession();
   try {
@@ -160,7 +162,6 @@ export const deleteMsg = async (req: AuthRequest, res: Response) => {
     ];
 
     await Message.bulkWrite(msgBulk, { session });
-    await session.commitTransaction();
     const [messagesAgg] = await Message.aggregate([
       {
         $facet: {
@@ -168,7 +169,10 @@ export const deleteMsg = async (req: AuthRequest, res: Response) => {
             {
               $match: {
                 _id: { $in: objectIds },
-                $or: [{ sender_id: userId }, { receiver_id: userId }],
+                $or: [
+                  { sender_id: userId, receiver_id: scId },
+                  { receiver_id: userId, sender_id: scId },
+                ],
               },
             },
             {
@@ -206,12 +210,34 @@ export const deleteMsg = async (req: AuthRequest, res: Response) => {
               },
             },
           ],
-          lastMsg: [
+          lastMsgA: [
             {
               $match: {
-                $or: [{ sender_id: userId }, { receiver_id: userId }],
-                deletedFor: { $ne: userId },
+                $or: [
+                  { sender_id: userId, receiver_id: scId },
+                  { receiver_id: userId, sender_id: scId },
+                ],
                 inTrash: { $ne: userId },
+              },
+            },
+            { $sort: { createdAt: -1 } },
+            { $limit: 1 },
+            {
+              $project: {
+                _id: 1,
+                sender_id: 1,
+                receiver_id: 1,
+              },
+            },
+          ],
+          lastMsgB: [
+            {
+              $match: {
+                $or: [
+                  { sender_id: userId, receiver_id: scId },
+                  { receiver_id: userId, sender_id: scId },
+                ],
+                inTrash: { $ne: scId },
               },
             },
             { $sort: { createdAt: -1 } },
@@ -226,9 +252,9 @@ export const deleteMsg = async (req: AuthRequest, res: Response) => {
           ],
         },
       },
-    ]);
+    ]).session(session);
     const updatedMsg = messagesAgg.updatedMsg as {
-      _id: string;
+      _id: mongoose.Types.ObjectId;
       deletedForEveryone: boolean;
       deletedFor: boolean;
       inTrash: boolean;
@@ -238,26 +264,39 @@ export const deleteMsg = async (req: AuthRequest, res: Response) => {
       attachments: any[];
       seen: "seen" | "unseen" | "semiseen";
     }[];
-    const lastMsg = messagesAgg.lastMsg[0] as {
-      _id: string;
+    const filterUnseenIds = updatedMsg
+      .filter((item) => item.seen === "unseen")
+      .map((item) => new mongoose.Types.ObjectId(item._id));
+    const lastMsgA = messagesAgg.lastMsgA[0] as {
+      _id: mongoose.Types.ObjectId;
       receiver_id: string;
       sender_id: string;
     };
-    if (lastMsg) {
-      const sortedParticipants: any[] = [
-        lastMsg.sender_id.toString(),
-        lastMsg.receiver_id.toString(),
-      ].sort();
-      await Conversation.findOneAndUpdate(
-        { participants: sortedParticipants },
-        {
-          $set: {
-            [`lastMessage.${userId.toString()}`]: lastMsg._id,
-            [`unreadCounts.${userId.toString()}`]: 0,
-          },
+    const lastMsgB = messagesAgg.lastMsgB[0] as {
+      _id: mongoose.Types.ObjectId;
+      receiver_id: string;
+      sender_id: string;
+    };
+    const userKey = userId.toString();
+    const scKey = scId.toString();
+    const sortedParticipants: any[] = [userKey, scKey].sort();
+    await Conversation.findOneAndUpdate(
+      { participants: sortedParticipants },
+      {
+        $set: {
+          ...(lastMsgA && { [`lastMessage.${userKey}`]: lastMsgA._id }),
+          ...(lastMsgB && { [`lastMessage.${scKey}`]: lastMsgB._id }),
         },
-      );
-    }
+        ...(filterUnseenIds.length > 0 && {
+          $pull: {
+            [`unreadCounts.${scKey}`]: { $in: filterUnseenIds },
+            [`unreadCounts.${userKey}`]: { $in: filterUnseenIds },
+          },
+        }),
+      },
+    ).session(session);
+    await session.commitTransaction();
+
     let forDeletor: {
       _id: string;
       deletedForEveryone: boolean;
@@ -269,19 +308,22 @@ export const deleteMsg = async (req: AuthRequest, res: Response) => {
     let forOppostition: Record<string, string[]> = {};
     updatedMsg.forEach((item) => {
       forDeletor.push({
-        _id: item._id,
+        _id: item._id.toString(),
         deletedForEveryone: item.deletedForEveryone,
         deletedFor: item.deletedFor,
         inTrash: item.inTrash,
         content: item.content,
         attachments: item.attachments,
       });
-      if (item.sender_id == userId.toString() && item.seen !== "seen") {
+      if (item.sender_id == userKey && item.seen !== "seen") {
         const checkOppo = forOppostition[item.receiver_id];
         if (checkOppo) {
-          forOppostition[item.receiver_id] = [...checkOppo, item._id];
+          forOppostition[item.receiver_id] = [
+            ...checkOppo,
+            item._id.toString(),
+          ];
         } else {
-          forOppostition[item.receiver_id] = [item._id];
+          forOppostition[item.receiver_id] = [item._id.toString()];
         }
       }
     });
@@ -293,12 +335,13 @@ export const deleteMsg = async (req: AuthRequest, res: Response) => {
           online.forEach((skt) => {
             io.to(skt).emit("deleteMsgs", {
               ids: forOppostition[item],
-              deletedBy: userId.toString(),
+              deletedBy: userKey,
             });
           });
         }
       });
     }
+
     return res.status(200).json(forDeletor);
   } catch (error) {
     await session.abortTransaction();

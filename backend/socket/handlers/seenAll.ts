@@ -28,7 +28,7 @@ export function seenAll(io: Server, socket: Socket) {
         Conversation.findOneAndUpdate(
           { participants: sortedParticipants } as any,
           {
-            $set: { [`unreadCounts.${receiver_id}`]: 0 },
+            $set: { [`unreadCounts.${receiver_id}`]: [] },
           },
         ),
       ]);

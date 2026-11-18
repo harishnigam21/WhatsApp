@@ -2,6 +2,7 @@ import { Server, Socket } from "socket.io";
 import { userSocketIds } from "../../server";
 import Message from "../../models/Message";
 import Conversation from "../../models/Conversation";
+import mongoose from "mongoose";
 
 export function markSeen(io: Server, socket: Socket) {
   const authenticatedUserId = socket.data.userId as string | undefined;
@@ -29,10 +30,13 @@ export function markSeen(io: Server, socket: Socket) {
         Conversation.findOneAndUpdate(
           {
             participants: sortedParticipants,
-            [`unreadCounts.${receiver_id}`]: { $gt: 0 },
           },
           {
-            $inc: { [`unreadCounts.${receiver_id}`]: -1 },
+            $pull: {
+              [`unreadCounts.${receiver_id}`]: new mongoose.Types.ObjectId(
+                msg_id,
+              ),
+            },
           },
         ),
       ]);

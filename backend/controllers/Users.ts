@@ -195,11 +195,11 @@ export const getActiveContacts = async (req: AuthRequest, res: Response) => {
         }
       } catch (error) {
         updatedLastMessage = {
-          _id: "start messaging",
-          sender_id: "start messaging",
-          receiver_id: "start messaging",
-          content: "start messaging...",
-          seen: "start messaging",
+          _id: `start chatting - ${userId}`,
+          sender_id: "start chatting",
+          receiver_id: "start chatting",
+          content: "start chatting...",
+          seen: "start chatting",
           attachments: [],
           deletedFor: true,
           createdAt: new Date(),
@@ -207,7 +207,7 @@ export const getActiveContacts = async (req: AuthRequest, res: Response) => {
       }
 
       const user = item.participants[0];
-      const unread = item.unreadCounts[userId.toString()];
+      const unread = item.unreadCounts[userId.toString()].length;
       return { ...user, unread, lastMessage: updatedLastMessage };
     });
     return res.status(200).json(contactList);

@@ -180,11 +180,11 @@ export function sendMessage(io: Server, socket: Socket) {
             },
             $setOnInsert: {
               participants: sortedParticipants,
-              [`unreadCounts.${sender_id}`]: 0,
+              [`unreadCounts.${sender_id}`]: [],
             },
             ...(message.seen !== "seen" && {
-              $inc: {
-                [`unreadCounts.${receiver_id}`]: 1,
+              $addToSet: {
+                [`unreadCounts.${receiver_id}`]: message._id,
               },
             }),
           },
