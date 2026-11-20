@@ -2,6 +2,7 @@ import { Server, Socket } from "socket.io";
 import { userSocketIds } from "../../server";
 import Message from "../../models/Message";
 import Conversation from "../../models/Conversation";
+import mongoose from "mongoose";
 
 export function seenAll(io: Server, socket: Socket) {
   const authenticatedUserId = socket.data.userId as string | undefined;
@@ -9,6 +10,7 @@ export function seenAll(io: Server, socket: Socket) {
     throw new Error("Unauthenticated socket connection");
   }
   socket.on("seenAll", async (data, acknowledge) => {
+    const session = await mongoose.startSession();
     try {
       const { sender_id } = data;
       const receiver_id = authenticatedUserId;
@@ -16,24 +18,40 @@ export function seenAll(io: Server, socket: Socket) {
         sender_id.toString(),
         receiver_id.toString(),
       ].sort();
-      await Promise.all([
-        Message.updateMany(
+      await session.withTransaction(async () => {
+        const conversation = await Conversation.findOneAndUpdate(
+          { participants: sortedParticipants },
           {
-            sender_id,
-            receiver_id,
-            seen: { $ne: "seen" },
+            $set: {
+              [`unreadCounts.${receiver_id}`]: [],
+            },
           },
-          { $set: { seen: "seen" } },
-        ),
-        Conversation.findOneAndUpdate(
-          { participants: sortedParticipants } as any,
           {
-            $set: { [`unreadCounts.${receiver_id}`]: [] },
+            returnDocument: "before",
+            session,
           },
-        ),
-      ]);
-      const receiverSocket = userSocketIds.get(sender_id);
+        ).select({
+          [`unreadCounts.${receiver_id}`]: 1,
+        });
 
+        const unreadIds = conversation?.unreadCounts?.get(receiver_id) ?? [];
+
+        if (unreadIds.length > 0) {
+          await Message.updateMany(
+            {
+              _id: { $in: unreadIds },
+              receiver_id,
+              seen: { $ne: "seen" },
+            },
+            {
+              $set: { seen: "seen" },
+            },
+            { session },
+          );
+        }
+      });
+
+      const receiverSocket = userSocketIds.get(sender_id);
       acknowledge?.({
         seenAll: { success: true, allSeenOf: sender_id },
       });
