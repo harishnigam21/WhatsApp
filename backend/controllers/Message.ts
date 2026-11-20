@@ -80,223 +80,11 @@ export const deleteMsg = async (req: AuthRequest, res: Response) => {
   const msgIds = req.body.ids as string[];
   const userId = new mongoose.Types.ObjectId(req.user!._id);
   const scId = new mongoose.Types.ObjectId(selectedContact);
+  const userKey = userId.toString();
+  const scKey = scId.toString();
   const objectIds = msgIds.map((id) => new mongoose.Types.ObjectId(id));
   const session = await mongoose.startSession();
   try {
-    session.startTransaction();
-
-    const msgBulk: AnyBulkWriteOperation[] = [
-      {
-        updateMany: {
-          filter: {
-            _id: { $in: objectIds },
-            deletedFor: { $in: [userId] },
-            $or: [{ sender_id: userId }, { receiver_id: userId }],
-          },
-          update: {
-            $addToSet: { inTrash: userId },
-          },
-        },
-      },
-      {
-        updateMany: {
-          filter: {
-            _id: { $in: objectIds },
-            seen: "seen",
-            $or: [{ sender_id: userId }, { receiver_id: userId }],
-          },
-          update: {
-            $addToSet: { deletedFor: userId, inTrash: userId },
-          },
-        },
-      },
-      {
-        updateMany: {
-          filter: {
-            _id: { $in: objectIds },
-            seen: "unseen",
-            sender_id: userId,
-          },
-          update: [
-            {
-              $set: {
-                deletedForEveryone: true,
-                inTrash: {
-                  $setUnion: [
-                    { $ifNull: ["$inTrash", []] },
-                    [userId, "$receiver_id"],
-                  ],
-                },
-                deletedFor: {
-                  $setUnion: [
-                    { $ifNull: ["$deletedFor", []] },
-                    [userId, "$receiver_id"],
-                  ],
-                },
-              },
-            },
-          ],
-        },
-      },
-      {
-        updateMany: {
-          filter: {
-            _id: { $in: objectIds },
-            seen: "semiseen",
-            sender_id: userId,
-          },
-          update: [
-            {
-              $set: {
-                deletedFor: {
-                  $setUnion: [
-                    { $ifNull: ["$deletedFor", []] },
-                    [userId, "$receiver_id"],
-                  ],
-                },
-              },
-            },
-          ],
-        },
-      },
-    ];
-
-    await Message.bulkWrite(msgBulk, { session });
-    const [messagesAgg] = await Message.aggregate([
-      {
-        $facet: {
-          updatedMsg: [
-            {
-              $match: {
-                _id: { $in: objectIds },
-                $or: [
-                  { sender_id: userId, receiver_id: scId },
-                  { receiver_id: userId, sender_id: scId },
-                ],
-              },
-            },
-            {
-              $addFields: {
-                isDeletedForMe: {
-                  $in: [userId, { $ifNull: ["$deletedFor", []] }],
-                },
-                inTrash: {
-                  $in: [userId, { $ifNull: ["$inTrash", []] }],
-                },
-              },
-            },
-            {
-              $project: {
-                sender_id: 1,
-                receiver_id: 1,
-                deletedForEveryone: 1,
-                deletedFor: "$isDeletedForMe",
-                attachments: {
-                  $cond: {
-                    if: "$isDeletedForMe",
-                    then: [],
-                    else: "$attachments",
-                  },
-                },
-                content: {
-                  $cond: {
-                    if: "$isDeletedForMe",
-                    then: "This message was deleted",
-                    else: "$content",
-                  },
-                },
-                inTrash: "$inTrash",
-                seen: 1,
-              },
-            },
-          ],
-          lastMsgA: [
-            {
-              $match: {
-                $or: [
-                  { sender_id: userId, receiver_id: scId },
-                  { receiver_id: userId, sender_id: scId },
-                ],
-                inTrash: { $ne: userId },
-              },
-            },
-            { $sort: { createdAt: -1 } },
-            { $limit: 1 },
-            {
-              $project: {
-                _id: 1,
-                sender_id: 1,
-                receiver_id: 1,
-              },
-            },
-          ],
-          lastMsgB: [
-            {
-              $match: {
-                $or: [
-                  { sender_id: userId, receiver_id: scId },
-                  { receiver_id: userId, sender_id: scId },
-                ],
-                inTrash: { $ne: scId },
-              },
-            },
-            { $sort: { createdAt: -1 } },
-            { $limit: 1 },
-            {
-              $project: {
-                _id: 1,
-                sender_id: 1,
-                receiver_id: 1,
-              },
-            },
-          ],
-        },
-      },
-    ]).session(session);
-    const updatedMsg = messagesAgg.updatedMsg as {
-      _id: mongoose.Types.ObjectId;
-      deletedForEveryone: boolean;
-      deletedFor: boolean;
-      inTrash: boolean;
-      sender_id: string;
-      receiver_id: string;
-      content: string;
-      attachments: any[];
-      seen: "seen" | "unseen" | "semiseen";
-    }[];
-    const filterUnseenIds = updatedMsg
-      .filter((item) => item.seen === "unseen")
-      .map((item) => new mongoose.Types.ObjectId(item._id));
-    const lastMsgA = messagesAgg.lastMsgA[0] as {
-      _id: mongoose.Types.ObjectId;
-      receiver_id: string;
-      sender_id: string;
-    };
-    const lastMsgB = messagesAgg.lastMsgB[0] as {
-      _id: mongoose.Types.ObjectId;
-      receiver_id: string;
-      sender_id: string;
-    };
-    const userKey = userId.toString();
-    const scKey = scId.toString();
-    const sortedParticipants: any[] = [userKey, scKey].sort();
-    await Conversation.findOneAndUpdate(
-      { participants: sortedParticipants },
-      {
-        $set: {
-          ...(lastMsgA && { [`lastMessage.${userKey}`]: lastMsgA._id }),
-          ...(lastMsgB && { [`lastMessage.${scKey}`]: lastMsgB._id }),
-        },
-        ...(filterUnseenIds.length > 0 && {
-          $pull: {
-            [`unreadCounts.${scKey}`]: { $in: filterUnseenIds },
-            [`unreadCounts.${userKey}`]: { $in: filterUnseenIds },
-          },
-        }),
-      },
-    ).session(session);
-    await session.commitTransaction();
-
     let forDeletor: {
       _id: string;
       deletedForEveryone: boolean;
@@ -306,29 +94,242 @@ export const deleteMsg = async (req: AuthRequest, res: Response) => {
       attachments: any[];
     }[] = [];
     let forOppostition: Record<string, string[]> = {};
-    updatedMsg.forEach((item) => {
-      forDeletor.push({
-        _id: item._id.toString(),
-        deletedForEveryone: item.deletedForEveryone,
-        deletedFor: item.deletedFor,
-        inTrash: item.inTrash,
-        content: item.content,
-        attachments: item.attachments,
-      });
-      if (item.sender_id == userKey && item.seen !== "seen") {
-        const checkOppo = forOppostition[item.receiver_id];
-        if (checkOppo) {
-          forOppostition[item.receiver_id] = [
-            ...checkOppo,
-            item._id.toString(),
-          ];
-        } else {
-          forOppostition[item.receiver_id] = [item._id.toString()];
+
+    await session.withTransaction(async () => {
+      const msgBulk: AnyBulkWriteOperation[] = [
+        {
+          updateMany: {
+            filter: {
+              _id: { $in: objectIds },
+              deletedFor: { $in: [userId] },
+              $or: [{ sender_id: userId }, { receiver_id: userId }],
+            },
+            update: {
+              $addToSet: { inTrash: userId },
+            },
+          },
+        },
+        {
+          updateMany: {
+            filter: {
+              _id: { $in: objectIds },
+              seen: "seen",
+              $or: [{ sender_id: userId }, { receiver_id: userId }],
+            },
+            update: {
+              $addToSet: { deletedFor: userId, inTrash: userId },
+            },
+          },
+        },
+        {
+          updateMany: {
+            filter: {
+              _id: { $in: objectIds },
+              seen: "unseen",
+              sender_id: userId,
+            },
+            update: [
+              {
+                $set: {
+                  deletedForEveryone: true,
+                  inTrash: {
+                    $setUnion: [
+                      { $ifNull: ["$inTrash", []] },
+                      [userId, "$receiver_id"],
+                    ],
+                  },
+                  deletedFor: {
+                    $setUnion: [
+                      { $ifNull: ["$deletedFor", []] },
+                      [userId, "$receiver_id"],
+                    ],
+                  },
+                },
+              },
+            ],
+          },
+        },
+        {
+          updateMany: {
+            filter: {
+              _id: { $in: objectIds },
+              seen: "semiseen",
+              sender_id: userId,
+            },
+            update: [
+              {
+                $set: {
+                  deletedFor: {
+                    $setUnion: [
+                      { $ifNull: ["$deletedFor", []] },
+                      [userId, "$receiver_id"],
+                    ],
+                  },
+                },
+              },
+            ],
+          },
+        },
+      ];
+
+      await Message.bulkWrite(msgBulk, { session });
+      const [messagesAgg] = await Message.aggregate([
+        {
+          $facet: {
+            updatedMsg: [
+              {
+                $match: {
+                  _id: { $in: objectIds },
+                  $or: [
+                    { sender_id: userId, receiver_id: scId },
+                    { receiver_id: userId, sender_id: scId },
+                  ],
+                },
+              },
+              {
+                $addFields: {
+                  isDeletedForMe: {
+                    $in: [userId, { $ifNull: ["$deletedFor", []] }],
+                  },
+                  inTrash: {
+                    $in: [userId, { $ifNull: ["$inTrash", []] }],
+                  },
+                },
+              },
+              {
+                $project: {
+                  sender_id: 1,
+                  receiver_id: 1,
+                  deletedForEveryone: 1,
+                  deletedFor: "$isDeletedForMe",
+                  attachments: {
+                    $cond: {
+                      if: "$isDeletedForMe",
+                      then: [],
+                      else: "$attachments",
+                    },
+                  },
+                  content: {
+                    $cond: {
+                      if: "$isDeletedForMe",
+                      then: "This message was deleted",
+                      else: "$content",
+                    },
+                  },
+                  inTrash: "$inTrash",
+                  seen: 1,
+                },
+              },
+            ],
+            lastMsgA: [
+              {
+                $match: {
+                  $or: [
+                    { sender_id: userId, receiver_id: scId },
+                    { receiver_id: userId, sender_id: scId },
+                  ],
+                  inTrash: { $ne: userId },
+                },
+              },
+              { $sort: { createdAt: -1 } },
+              { $limit: 1 },
+              {
+                $project: {
+                  _id: 1,
+                  sender_id: 1,
+                  receiver_id: 1,
+                },
+              },
+            ],
+            lastMsgB: [
+              {
+                $match: {
+                  $or: [
+                    { sender_id: userId, receiver_id: scId },
+                    { receiver_id: userId, sender_id: scId },
+                  ],
+                  inTrash: { $ne: scId },
+                },
+              },
+              { $sort: { createdAt: -1 } },
+              { $limit: 1 },
+              {
+                $project: {
+                  _id: 1,
+                  sender_id: 1,
+                  receiver_id: 1,
+                },
+              },
+            ],
+          },
+        },
+      ]).session(session);
+      const updatedMsg = messagesAgg.updatedMsg as {
+        _id: mongoose.Types.ObjectId;
+        deletedForEveryone: boolean;
+        deletedFor: boolean;
+        inTrash: boolean;
+        sender_id: string;
+        receiver_id: string;
+        content: string;
+        attachments: any[];
+        seen: "seen" | "unseen" | "semiseen";
+      }[];
+      const filterUnseenIds = updatedMsg
+        .filter((item) => item.seen === "unseen")
+        .map((item) => new mongoose.Types.ObjectId(item._id));
+      const lastMsgA = messagesAgg.lastMsgA[0] as {
+        _id: mongoose.Types.ObjectId;
+        receiver_id: string;
+        sender_id: string;
+      };
+      const lastMsgB = messagesAgg.lastMsgB[0] as {
+        _id: mongoose.Types.ObjectId;
+        receiver_id: string;
+        sender_id: string;
+      };
+
+      const sortedParticipants: any[] = [userKey, scKey].sort();
+      await Conversation.findOneAndUpdate(
+        { participants: sortedParticipants },
+        {
+          $set: {
+            ...(lastMsgA && { [`lastMessage.${userKey}`]: lastMsgA._id }),
+            ...(lastMsgB && { [`lastMessage.${scKey}`]: lastMsgB._id }),
+          },
+          ...(filterUnseenIds.length > 0 && {
+            $pull: {
+              [`unreadCounts.${scKey}`]: { $in: filterUnseenIds },
+              [`unreadCounts.${userKey}`]: { $in: filterUnseenIds },
+            },
+          }),
+        },
+      ).session(session);
+
+      updatedMsg.forEach((item) => {
+        forDeletor.push({
+          _id: item._id.toString(),
+          deletedForEveryone: item.deletedForEveryone,
+          deletedFor: item.deletedFor,
+          inTrash: item.inTrash,
+          content: item.content,
+          attachments: item.attachments,
+        });
+        if (item.sender_id == userKey && item.seen !== "seen") {
+          const checkOppo = forOppostition[item.receiver_id];
+          if (checkOppo) {
+            forOppostition[item.receiver_id] = [
+              ...checkOppo,
+              item._id.toString(),
+            ];
+          } else {
+            forOppostition[item.receiver_id] = [item._id.toString()];
+          }
         }
-      }
+      });
     });
     const getKeys = Object.keys(forOppostition);
-    if (getKeys.length !== 0) {
+    if (getKeys.length > 0) {
       getKeys.forEach((item) => {
         const online = userSocketIds.get(item);
         if (online) {
@@ -344,9 +345,6 @@ export const deleteMsg = async (req: AuthRequest, res: Response) => {
 
     return res.status(200).json(forDeletor);
   } catch (error) {
-    await session.abortTransaction();
     getServerError(res, error, "deleteMsg", "Failed to delete message");
-  } finally {
-    await session.endSession();
   }
 };
