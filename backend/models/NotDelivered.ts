@@ -20,4 +20,5 @@ const NotDelivered = new mongoose.Schema(
   },
   { timestamps: true },
 );
+NotDelivered.index({ receiver_id: 1 });
 export default mongoose.model("NotDelivered", NotDelivered);
