@@ -60,6 +60,7 @@ interface initialStateType {
   cachedUrls: Record<string, string>;
   selectedFor: boolean;
   selectionFor: string[];
+  selectedFileIndex: string | null;
 }
 const initialState: initialStateType = {
   selectedContact: null,
@@ -69,6 +70,7 @@ const initialState: initialStateType = {
   cachedUrls: {},
   selectedFor: false,
   selectionFor: [],
+  selectedFileIndex: null,
 };
 const ChatSlice = createSlice({
   name: "chat",
@@ -447,6 +449,12 @@ const ChatSlice = createSlice({
       ];
       state.selectedContact.next = action.payload.next;
     },
+    setSelectedFileIndex: (state, action: PayloadAction<string>) => {
+      state.selectedFileIndex = action.payload;
+    },
+    clearSelectedFileIndex: (state) => {
+      state.selectedFileIndex = null;
+    },
   },
 });
 export const {
@@ -474,5 +482,7 @@ export const {
   deleteMsg,
   deleteMsgR,
   nextMessages,
+  setSelectedFileIndex,
+  clearSelectedFileIndex,
 } = ChatSlice.actions;
 export default ChatSlice.reducer;

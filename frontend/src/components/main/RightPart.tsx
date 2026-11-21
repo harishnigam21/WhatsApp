@@ -39,9 +39,11 @@ import { socket } from "@/redux/socketMiddleware";
 import {
   addSenderMessage,
   clearSelectedContact,
+  clearSelectedFileIndex,
   clearSelectionFor,
   MessageType,
   setCachedUrls,
+  setSelectedFileIndex,
   setSelectedFor,
 } from "@/redux/slices/ChatSlice";
 import AttachmentSection from "./AttachmentSection";
@@ -251,6 +253,7 @@ export default function RightPart({
       changeParent: (id: string | null) => void,
       index: number,
     ) => {
+      dispatch(setSelectedFileIndex(file.URL));
       setActiveTransferFiles((prev) => ({
         ...prev,
         [file.URL]: { status: "loading", progress: 0 },
@@ -412,6 +415,7 @@ export default function RightPart({
       setInput("");
       // files.forEach((item) => URL.revokeObjectURL(item.URL)); //not removing now
       setFiles([]);
+      dispatch(clearSelectedFileIndex());
     }
   };
   const [options, setOptions] = useState<boolean>(false);

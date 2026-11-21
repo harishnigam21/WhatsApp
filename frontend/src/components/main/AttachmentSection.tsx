@@ -5,6 +5,11 @@ import { IoSendSharp } from "react-icons/io5";
 import { useEffect, useState } from "react";
 import { formatBytes } from "@/utils/formatBytes";
 import { FilePreview } from "../chat/AttachmentPreview";
+import { useAppDispatch, useAppSelector } from "@/redux/Store";
+import {
+  clearSelectedFileIndex,
+  setSelectedFileIndex,
+} from "@/redux/slices/ChatSlice";
 
 export default function AttachmentSection({
   files,
@@ -24,40 +29,56 @@ export default function AttachmentSection({
   >;
   handleSendMessage: () => void;
 }) {
-  const [selectedFiles, setSelectedFiles] = useState<number>(0);
-
+  const [selectedFile, setSelectedFile] = useState(files[0]);
+  const selectedFileURL = useAppSelector(
+    (store) => store.chat.selectedFileIndex,
+  );
+  const selectedFileIndex = selectedFileURL || files[0].URL;
+  useEffect(() => {
+    const getFile = files.find((item) => item.URL === selectedFileIndex);
+    if (getFile) setSelectedFile(getFile);
+  }, [selectedFileIndex]);
+  const dispatch = useAppDispatch();
   return (
     <div className="absolute top-0 left-0 z-11 w-full h-full pt-15">
       <div className="relative bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)] w-full h-full border-t border-borderhl/30 flex flex-col justify-between">
         <div className="flex grow flex-col items-center justify-between gap-2 overflow-hidden">
-          <div className="flex flex-nowrap justify-between gap-4 items-center w-full px-1 sm:px-3">
+          <div className="flex flex-nowrap justify-between gap-4 items-center w-full px-1 sm:px-3 my-4">
             <div
               className="cursor-pointer"
               onClick={() => {
                 if (!loading) {
                   files.forEach((item) => URL.revokeObjectURL(item.URL));
                   setFiles([]);
+                  dispatch(clearSelectedFileIndex());
                 }
               }}
             >
               <X size={24} color="white" strokeWidth={1} />
             </div>
-            <p className="my-4 font-medium text-sm break-all line-clamp-1 p-1 grow text-center">
-              {files[selectedFiles]?.file.name}
-            </p>
+            <div className="relative flex items-center">
+              <p className=" font-medium text-sm break-all line-clamp-1 p-1 grow text-center">
+                {selectedFile.file.name}
+              </p>
+              <div className="rounded-full bg-green-500 text-black font-bold px-1 py-px flex items-center">
+                <small className="text-[8px] whitespace-nowrap">
+                  {formatBytes(selectedFile.file.size)}
+                </small>
+              </div>
+            </div>
             <div className="cursor-pointer">
               <EllipsisVertical size={24} color="white" strokeWidth={1} />
             </div>
           </div>
           <div className="flex grow w-full items-center justify-center overflow-hidden">
-            {files[selectedFiles] ? (
+            {selectedFile ? (
               <FilePreview
                 item={{
-                  name: files[selectedFiles].file.name,
-                  type: files[selectedFiles].file.type,
-                  blobUrl: files[selectedFiles].URL,
-                  thumbnail: files[selectedFiles].URL,
-                  size: files[selectedFiles].file.size,
+                  name: selectedFile.file.name,
+                  type: selectedFile.file.type,
+                  blobUrl: selectedFile.URL,
+                  thumbnail: selectedFile.URL,
+                  size: selectedFile.file.size,
                 }}
               />
             ) : (
@@ -68,16 +89,17 @@ export default function AttachmentSection({
           </div>
           <div className="w-full md:w-7/10 lg:w-6/10 mb-2 px-4">
             <textarea
-              value={files[selectedFiles]?.message}
+              value={selectedFile?.message}
               name="popupInputArea"
               id="popupInputArea"
               className="bg-borderhl/40 rounded-md w-full resize-none outline-none px-2 py-3"
               placeholder="Type a message"
               rows={1}
+              autoFocus
               onChange={(e) => {
                 setFiles((prev) =>
                   prev.map((item, i) => {
-                    if (i == selectedFiles) {
+                    if (item.URL == selectedFileIndex) {
                       return { ...item, message: e.target.value };
                     } else {
                       return item;
@@ -93,22 +115,23 @@ export default function AttachmentSection({
             {files.map((item, i) => (
               <FilePreviewBox
                 key={`attached/item/preview/${i}`}
-                i={i}
                 item={item}
                 setFiles={setFiles}
                 loading={loading}
-                selectedFiles={selectedFiles}
-                setSelectedFiles={setSelectedFiles}
                 activeTransferFiles={activeTransferFiles}
+                selectedFileIndex={selectedFileIndex}
+                first={files[0]}
               />
             ))}
             <label
+              title="add more attachments"
               htmlFor="addmore"
               className={`max-w-15 min-w-15 max-h-15 min-h-15 flex items-center justify-center rounded-lg border border-borderhl overflow-hidden cursor-pointer`}
             >
               <Plus size={18} className="text-borderhl" />
             </label>
             <input
+              disabled={loading}
               type="file"
               name="addmore"
               id="addmore"
@@ -155,58 +178,41 @@ export default function AttachmentSection({
 
 const FilePreviewBox = ({
   item,
-  setSelectedFiles,
-  i,
   loading,
   setFiles,
-  selectedFiles,
   activeTransferFiles,
+  selectedFileIndex,
+  first,
 }: {
   item: { file: File; URL: string; message: string };
-  i: number;
+  first: { file: File; URL: string; message: string };
   loading: boolean;
-  setSelectedFiles: React.Dispatch<React.SetStateAction<number>>;
   setFiles: React.Dispatch<
     React.SetStateAction<{ file: File; URL: string; message: string }[]>
   >;
-  selectedFiles: number;
   activeTransferFiles: Record<
     string,
     { status: "start" | "loading" | "stop" | "error"; progress: number }
   >;
+  selectedFileIndex: string;
 }) => {
   const [progress, setProgress] = useState<number>(0);
+  const dispatch = useAppDispatch();
   useEffect(() => {
     const fileStatus = activeTransferFiles[item.URL];
     if (fileStatus) {
       setProgress(fileStatus.progress);
     }
-    // if (!fileStatus) {
-    //   setProgress(0);
-    //   return;
-    // }
-    // if (fileStatus === "stop") {
-    //   setProgress(100);
-    //   return;
-    // }
-    // if (fileStatus === "start" || fileStatus === "loading") {
-    //   setProgress((prev) => (prev >= 80 ? 0 : prev));
-    //   const progressing = setInterval(() => {
-    //     setProgress((prev) => {
-    //       if (prev >= 80) {
-    //         return prev;
-    //       }
-    //       return prev + 5;
-    //     });
-    //   }, 600);
-    //   return () => clearInterval(progressing);
-    // }
   }, [activeTransferFiles]);
+
   return (
     <div
       title={item.file.name}
-      className={`max-w-15 min-w-15 max-h-15 min-h-15 relative flex items-center justify-center rounded-lg ${i == selectedFiles ? "border-3 border-pri" : "border-3 border-borderhl/30"} overflow-hidden cursor-pointer`}
-      onClick={() => setSelectedFiles(i)}
+      className={`max-w-15 min-w-15 max-h-15 min-h-15 relative flex items-center justify-center rounded-lg ${item.URL == selectedFileIndex ? "border-3 border-pri" : "border-3 border-borderhl/30"} overflow-hidden cursor-pointer`}
+      onClick={() => {
+        dispatch(setSelectedFileIndex(item.URL));
+        document.getElementById("popupInputArea")?.focus();
+      }}
     >
       {item.file.type.startsWith("image/") ? (
         <Image
@@ -223,10 +229,23 @@ const FilePreviewBox = ({
         <div
           title="remove"
           className="absolute top-0.5 right-0.5 size-4 bg-red-500 rounded-full flex items-center justify-center hover:scale-110 active:scale-110 transition-all z-1"
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             if (!loading) {
               URL.revokeObjectURL(item.URL);
-              setFiles((prev) => prev.filter((file) => file.URL !== item.URL));
+              let to = first;
+              setFiles((prev) =>
+                prev.filter((file, i) => {
+                  if (i > 0 && file.URL == item.URL) {
+                    to = prev[i - 1];
+                  }
+                  if (i < prev.length - 1 && file.URL == item.URL) {
+                    to = prev[i + 1];
+                  }
+                  return file.URL !== item.URL;
+                }),
+              );
+              dispatch(setSelectedFileIndex(to.URL));
             }
           }}
         >
