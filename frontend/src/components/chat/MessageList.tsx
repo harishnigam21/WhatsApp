@@ -104,6 +104,7 @@ const MessageBody = ({
   sectionRef: RefObject<HTMLDivElement | null>;
 }) => {
   const messageRef = useRef<HTMLDivElement>(null);
+  const downRef = useRef<HTMLDivElement>(null);
   const attachment = item?.attachments || [];
   const attachmentLength = attachment?.length;
   const userID = useAppSelector((store) => store.user.userInfo?._id);
@@ -208,6 +209,9 @@ const MessageBody = ({
             attachment={attachment}
             attachmentLength={attachmentLength}
             sectionWidth={sectionWidth}
+            hideOptions={() => {
+              setOptions(false);
+            }}
           />
         )}
         <div className="flex flex-nowrap w-full py-0.5 px-1.5 mt-1">
@@ -260,6 +264,7 @@ const MessageBody = ({
           className={`absolute top-1 right-1 transition-all group-hover:block ${options ? "block" : "hidden"} group-active:block`}
         >
           <div
+            ref={downRef}
             className="cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
@@ -276,6 +281,7 @@ const MessageBody = ({
             messageRef={messageRef}
             setOptions={setOptions}
             sectionRef={sectionRef}
+            downRef={downRef}
             handleStar={handleStar}
             handleDelete={() => {
               handleDelete([item._id]);

@@ -25,6 +25,7 @@ export default function MessageListMenu({
   options,
   sectionRef,
   messageRef,
+  downRef,
   handleStar,
   handleDelete,
   deleted,
@@ -33,6 +34,7 @@ export default function MessageListMenu({
   setOptions: React.Dispatch<React.SetStateAction<boolean>>;
   sectionRef: RefObject<HTMLDivElement | null>;
   messageRef: RefObject<HTMLDivElement | null>;
+  downRef: RefObject<HTMLDivElement | null>;
   handleStar: () => void;
   handleDelete: () => void | Promise<void>;
   deleted: boolean;
@@ -44,7 +46,7 @@ export default function MessageListMenu({
     placement: "bottom-start",
     strategy: "fixed",
     middleware: [
-      offset(8),
+      offset(1),
       flip({
         boundary: section ?? undefined,
         padding: 8,
@@ -58,10 +60,10 @@ export default function MessageListMenu({
   });
 
   useEffect(() => {
-    if (messageRef.current) {
-      refs.setPositionReference(messageRef.current);
+    if (downRef.current) {
+      refs.setPositionReference(downRef.current);
     }
-  }, [messageRef, refs]);
+  }, [downRef, refs]);
 
   useEffect(() => {
     if (!options) return;

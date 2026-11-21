@@ -13,10 +13,12 @@ export default function AttachmentGrid({
   attachment,
   attachmentLength,
   sectionWidth,
+  hideOptions,
 }: {
   attachment: AttachmentType[];
   attachmentLength: number;
   sectionWidth: number;
+  hideOptions: () => void;
 }) {
   const gridColCalculate = attachmentLength > 2 ? 2 : attachmentLength;
   const [URLtoDownload, setURLToDownload] = useState<string[]>([]);
@@ -161,6 +163,9 @@ export default function AttachmentGrid({
       urlsToCleanup.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [attachment]);
+  useEffect(() => {
+    hideOptions();
+  }, [selectedFile]);
   return (
     <div
       style={{
