@@ -22,7 +22,7 @@ type UploadedFilePayload = {
   receiver_id: string;
   parent?: string | null;
   message?: string;
-
+  mainMessage?: string;
   url: string;
   thumbnail?: string | null;
   public_id: string;
@@ -302,7 +302,7 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
           const created = await Message.create({
             sender_id: payload.sender_id,
             receiver_id: payload.receiver_id,
-            content: payload.message ?? "",
+            content: payload.mainMessage ? payload.mainMessage : null,
             attachments: [attachment],
             seen: receiverSocket ? "semiseen" : "unseen",
           });
@@ -343,7 +343,7 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
               },
               $setOnInsert: {
                 participants: sortedParticipants,
-                [`unreadCounts.${payload.sender_id}`]: 0,
+                [`unreadCounts.${payload.sender_id}`]: [],
               },
               ...(isNewMessage && {
                 $addToSet: {

@@ -63,13 +63,12 @@ export default function MessageList() {
       observer.disconnect();
     };
   }, []);
-  
+
   return (
     <section
       ref={sectionRef}
       className="flex flex-col gap-1 w-full py-4 sm:py-8 grow justify-end-safe"
     >
-      
       {Object.entries(messages).map(([date, msgs]) => (
         <div
           key={`selectedMessage/date/${date}`}
@@ -90,7 +89,7 @@ export default function MessageList() {
         </div>
       ))}
 
-      <div id="scrollToMessage" style={{ scrollMarginBottom: '100px' }}></div>
+      <div id="scrollToMessage" style={{ scrollMarginBottom: "100px" }}></div>
     </section>
   );
 }
@@ -212,15 +211,22 @@ const MessageBody = ({
           />
         )}
         <div className="flex flex-nowrap w-full py-0.5 px-1.5 mt-1">
-          {!attachment ||
-            (attachment.length <= 1 && (
-              <p
-                className={`text-xs sm:text-sm md:text-base pb-1 whitespace-pre-wrap ${item.deletedFor && "text-txpri/30"}`}
-              >
-                {item.content}
-              </p>
-            ))}
-
+          {(() => {
+            const message =
+              item.content ||
+              (item.attachments?.length === 1
+                ? item.attachments[0].message
+                : null) ||
+              null;
+            if (message)
+              return (
+                <p
+                  className={`text-xs sm:text-sm md:text-base pb-1 whitespace-pre-wrap ${item.deletedFor && "text-txpri/30"}`}
+                >
+                  {message}
+                </p>
+              );
+          })()}
           <div className="ml-2 -mb-0.5 flex flex-nowrap grow justify-end items-end whitespace-nowrap">
             <small className="text-txpri/75 text-[10px] mr-1">
               {formatTimeToAmPm(item.createdAt)}

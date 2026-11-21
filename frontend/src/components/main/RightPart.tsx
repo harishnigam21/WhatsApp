@@ -249,6 +249,7 @@ export default function RightPart({
       file: (typeof files)[number],
       currentParent: string | null,
       changeParent: (id: string | null) => void,
+      index: number,
     ) => {
       setActiveTransferFiles((prev) => ({
         ...prev,
@@ -330,6 +331,7 @@ export default function RightPart({
           created_at: data.created_at,
           size: data.bytes,
           tags: data.tags ?? [],
+          ...(index === 0 && { mainMessage: input }),
         };
         const messageResponse = await emitWithAck<FileMessageResponse>(
           "upload-file",
@@ -377,9 +379,11 @@ export default function RightPart({
         const changeParent = (id: string | null) => {
           currentParent = id;
         };
+        let index = 0;
         for (const file of files) {
           try {
-            await uploadOneFile(file, currentParent, changeParent);
+            await uploadOneFile(file, currentParent, changeParent, index);
+            index++;
           } catch (error) {
             // This allows the remaining files to continue uploading.
             console.error(`Failed to upload:`, error);
@@ -405,6 +409,7 @@ export default function RightPart({
       console.log("Error sending message:", error);
     } finally {
       setLoading(false);
+      setInput("");
       // files.forEach((item) => URL.revokeObjectURL(item.URL)); //not removing now
       setFiles([]);
     }
@@ -635,7 +640,11 @@ export default function RightPart({
                   className="py-0.5 px-2 whitespace-nowrap self-center text-xs cursor-pointer flex flex-nowrap items-center mt-4"
                 >
                   <span>Load More</span>
-                  <ChevronsUp className="animate-bounce -mb-1 ml-1" strokeWidth={1} size={16} />
+                  <ChevronsUp
+                    className="animate-bounce -mb-1 ml-1"
+                    strokeWidth={1}
+                    size={16}
+                  />
                 </div>
               )
             )}

@@ -16,7 +16,7 @@ export interface MessageType {
   _id: string;
   receiver_id: string;
   sender_id: string;
-  content: string;
+  content: string | null;
   attachments?: AttachmentType[];
   seen: "seen" | "unseen" | "semiseen";
   starred: boolean;
