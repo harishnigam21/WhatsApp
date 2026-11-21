@@ -2,7 +2,7 @@ import Image from "next/image";
 import { renderFileIcon } from "./RightPart";
 import { EllipsisVertical, LoaderCircle, Plus, X } from "lucide-react";
 import { IoSendSharp } from "react-icons/io5";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatBytes } from "@/utils/formatBytes";
 import { FilePreview } from "../chat/AttachmentPreview";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
@@ -39,8 +39,48 @@ export default function AttachmentSection({
     if (getFile) setSelectedFile(getFile);
   }, [selectedFileIndex]);
   const dispatch = useAppDispatch();
+  const sectionRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!sectionRef.current) return;
+      const fileLength = files.length;
+      const index = files.findIndex((item) => item.URL === selectedFile.URL);
+      let toScrollIndex = index;
+
+      if (event.key === "ArrowRight") {
+        if (index + 1 <= fileLength - 1) {
+          toScrollIndex = index + 1;
+          dispatch(setSelectedFileIndex(files[index + 1].URL));
+        } else {
+          toScrollIndex = 0;
+          dispatch(setSelectedFileIndex(files[0].URL));
+        }
+      } else if (event.key === "ArrowLeft") {
+        if (index - 1 >= 0) {
+          toScrollIndex = index - 1;
+          dispatch(setSelectedFileIndex(files[index - 1].URL));
+        } else {
+          toScrollIndex = fileLength - 1;
+          dispatch(setSelectedFileIndex(files[fileLength - 1].URL));
+        }
+      }
+      const id = document.getElementById(
+        `attached/item/preview/${toScrollIndex}`,
+      );
+      id?.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [files, dispatch, selectedFile]);
   return (
-    <div className="absolute top-0 left-0 z-11 w-full h-full pt-15">
+    <div
+      ref={sectionRef}
+      className="absolute top-0 left-0 z-11 w-full h-full pt-15"
+    >
       <div className="relative bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)] w-full h-full border-t border-borderhl/30 flex flex-col justify-between">
         <div className="flex grow flex-col items-center justify-between gap-2 overflow-hidden">
           <div className="flex flex-nowrap justify-between gap-4 items-center w-full px-1 sm:px-3 my-4">
@@ -121,6 +161,7 @@ export default function AttachmentSection({
                 activeTransferFiles={activeTransferFiles}
                 selectedFileIndex={selectedFileIndex}
                 first={files[0]}
+                i={i}
               />
             ))}
             <label
@@ -183,7 +224,9 @@ const FilePreviewBox = ({
   activeTransferFiles,
   selectedFileIndex,
   first,
+  i,
 }: {
+  i: number;
   item: { file: File; URL: string; message: string };
   first: { file: File; URL: string; message: string };
   loading: boolean;
@@ -207,6 +250,7 @@ const FilePreviewBox = ({
 
   return (
     <div
+      id={`attached/item/preview/${i}`}
       title={item.file.name}
       className={`max-w-15 min-w-15 max-h-15 min-h-15 relative flex items-center justify-center rounded-lg ${item.URL == selectedFileIndex ? "border-3 border-pri" : "border-3 border-borderhl/30"} overflow-hidden cursor-pointer`}
       onClick={() => {

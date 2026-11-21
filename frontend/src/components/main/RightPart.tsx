@@ -254,6 +254,12 @@ export default function RightPart({
       index: number,
     ) => {
       dispatch(setSelectedFileIndex(file.URL));
+      const id = document.getElementById(`attached/item/preview/${index}`);
+      id?.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
       setActiveTransferFiles((prev) => ({
         ...prev,
         [file.URL]: { status: "loading", progress: 0 },
