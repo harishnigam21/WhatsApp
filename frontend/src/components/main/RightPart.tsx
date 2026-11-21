@@ -81,16 +81,23 @@ export default function RightPart({
   const [files, setFiles] = useState<
     { file: File; URL: string; message: string }[]
   >([]);
-  const MessageAreaRef = useRef<HTMLDivElement>(null);
-  const [loading, setLoading] = useState<boolean>(false);
   const [activeTransferFiles, setActiveTransferFiles] = useState<
     Record<
       string,
       { status: "start" | "loading" | "stop" | "error"; progress: number }
     >
   >({});
+  const { selectedFor, selectionFor } = useAppSelector((store) => store.chat);
+  const { handleNextMessages, loading: nextLoading } = NextMessages();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [options, setOptions] = useState<boolean>(false);
+  const MessageAreaRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const hasUserScrolledForLoad = useRef(false);
+  const prevHeightRef = useRef<number>(0);
   const dispatch = useAppDispatch();
   const router = useRouter();
+
   const handleSendMessage = async () => {
     const attachmentSize: number =
       Number(process.env.NEXT_PUBLIC_ATTACHMENT_SIZE) || 10485760;
@@ -424,13 +431,7 @@ export default function RightPart({
       dispatch(clearSelectedFileIndex());
     }
   };
-  const [options, setOptions] = useState<boolean>(false);
-  const { selectedFor, selectionFor } = useAppSelector((store) => store.chat);
-
-  const { handleNextMessages, loading: nextLoading } = NextMessages();
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-  const hasUserScrolledForLoad = useRef(false);
-
+ 
   useEffect(() => {
     hasUserScrolledForLoad.current = false;
   }, []);
@@ -477,37 +478,25 @@ export default function RightPart({
   }, [nextLoading, handleNextMessages]);
 
   useEffect(() => {
-    const container = MessageAreaRef.current;
-    const messages = selectedContact?.messages;
-
-    if (!container || !messages || messages.length === 0) return;
-
-    const lastMessage = messages[messages.length - 1];
-    const id = lastMessage?._id
-      ? `message/${lastMessage._id}`
-      : "scrollToMessage";
-
-    let animationFrameId: number | null = null;
-    let attempts = 0;
-    const maxAttempts = 30; // Prevent infinite loops (~0.5 seconds at 60fps)
-
-    const tryScroll = () => {
-      const success = scrollToSection(id, MessageAreaRef);
-
-      if (!success && attempts < maxAttempts) {
-        attempts++;
-        animationFrameId = requestAnimationFrame(tryScroll);
+    if (!MessageAreaRef.current) return;
+    const rectA = MessageAreaRef.current;
+    const rectB = rectA?.firstElementChild as HTMLElement | null;
+    if (!rectA || !rectB) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const newHeight = entry.contentRect.height;
+        if (
+          newHeight > prevHeightRef.current &&
+          newHeight > rectA.clientHeight
+        ) {
+          rectA.scrollTop = rectA.scrollHeight;
+        }
+        prevHeightRef.current = newHeight;
       }
-    };
-
-    animationFrameId = requestAnimationFrame(tryScroll);
-
-    return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
-    };
-  }, [scrollToSection, selectedContact?.bio]);
+    });
+    observer.observe(rectB);
+    return () => observer.disconnect();
+  }, [MessageAreaRef, selectedContact?.bio]);
 
   useEffect(() => {
     if (input.trim().length > 0) {
@@ -516,6 +505,7 @@ export default function RightPart({
       setSendDisable(true);
     }
   }, [input]);
+
   useEffect(() => {
     window.history.pushState({ preventExit: true }, "", window.location.href);
     const handlePopState = () => {
@@ -527,7 +517,9 @@ export default function RightPart({
       window.removeEventListener("popstate", handlePopState);
     };
   }, []);
+
   const { handleDelete, loading: deleteLoading } = handleDeleteMessage();
+
   if (!selectedContact) return;
 
   return (
