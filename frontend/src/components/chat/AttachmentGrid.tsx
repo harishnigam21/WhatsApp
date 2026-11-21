@@ -170,19 +170,50 @@ export default function AttachmentGrid({
       className={`w-full p-1 gap-1 relative`}
     >
       {attachment.map((item, i) => {
-        if (executed) {
+        if (executed && i < 4) {
           return (
             <div
               title={item.message}
               className="relative cursor-pointer w-full overflow-hidden"
               key={`message/attachment/${item._id}`}
             >
-              {i < 4 &&
-                (item.resource_type == "image" &&
-                item.type.startsWith("image") ? (
+              {item.resource_type == "image" &&
+              item.type.startsWith("image") ? (
+                <div
+                  style={{ width: `${ABS}px`, height: `${ABS}px` }}
+                  className={` relative flex items-center justify-center overflow-hidden`}
+                  onClick={() => {
+                    const exist = cachedUrls[item.url];
+                    if (exist) {
+                      setSelectedFile([
+                        {
+                          blobUrl: exist,
+                          name: item.name,
+                          type: item.type,
+                          thumbnail: item.thumbnail,
+                          size: item.size,
+                          message: item.message,
+                        },
+                      ]);
+                    }
+                  }}
+                >
+                  <Image
+                    src={cachedUrls[item.url] || item.thumbnail!}
+                    alt="refresh"
+                    loading="lazy"
+                    width={10}
+                    height={10}
+                    className="w-full h-full object-cover object-center rounded-lg overflow-hidden aspect-square"
+                  />
+                </div>
+              ) : (
+                <div
+                  style={{ width: `${ABS}px`, height: `${ABS}px` }}
+                  className={`flex items-center justify-center rounded-lg`}
+                >
                   <div
-                    style={{ width: `${ABS}px`, height: `${ABS}px` }}
-                    className={` relative flex items-center justify-center overflow-hidden`}
+                    className="bg-bgsec/30 rounded-lg w-full h-full flex items-center justify-center p-2"
                     onClick={() => {
                       const exist = cachedUrls[item.url];
                       if (exist) {
@@ -199,45 +230,13 @@ export default function AttachmentGrid({
                       }
                     }}
                   >
-                    <Image
-                      src={cachedUrls[item.url] || item.thumbnail!}
-                      alt="refresh"
-                      loading="lazy"
-                      width={10}
-                      height={10}
-                      className="w-full h-full object-cover object-center rounded-lg overflow-hidden aspect-square"
-                    />
+                    {renderFileIcon(
+                      { type: item.type } as File,
+                      attachment.length > 1 ? 7 : 18,
+                    )}
                   </div>
-                ) : (
-                  <div
-                    style={{ width: `${ABS}px`, height: `${ABS}px` }}
-                    className={`flex items-center justify-center rounded-lg`}
-                  >
-                    <div
-                      className="bg-bgsec/30 rounded-lg w-full h-full flex items-center justify-center p-2"
-                      onClick={() => {
-                        const exist = cachedUrls[item.url];
-                        if (exist) {
-                          setSelectedFile([
-                            {
-                              blobUrl: exist,
-                              name: item.name,
-                              type: item.type,
-                              thumbnail: item.thumbnail,
-                              size: item.size,
-                              message: item.message,
-                            },
-                          ]);
-                        }
-                      }}
-                    >
-                      {renderFileIcon(
-                        { type: item.type } as File,
-                        attachment.length > 1 ? 7 : 18,
-                      )}
-                    </div>
-                  </div>
-                ))}
+                </div>
+              )}
               {i == 3 && attachmentLength > 4 && (
                 <div
                   style={{ width: `${ABS}px`, height: `${ABS}px` }}
