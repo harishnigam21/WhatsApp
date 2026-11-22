@@ -11,6 +11,7 @@ import { app } from "../utils/firebase.js";
 import { getAuth } from "firebase-admin/auth";
 import redisConnect from "../config/redis_connect.js";
 import Conversation from "../models/Conversation.js";
+import Contacts from "../models/Contacts.js";
 interface RegistrationFiles {
   pic?: Express.Multer.File[];
   banner?: Express.Multer.File[];
@@ -87,6 +88,7 @@ export const newUser = async (req: Request, res: Response) => {
       bio,
       phone,
       phoneCode,
+      fullPhone: phoneCode + phone,
       pic: picUrl,
       banner: bannerUrl,
     });
@@ -141,10 +143,62 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
 
 export const getContacts = async (req: AuthRequest, res: Response) => {
   try {
-    const contacts = await User.find({ _id: { $ne: req.user?._id } })
-      .select("name pic bio")
+    const userContacts = await Contacts.find({ userId: req.user?._id })
+      .select("name email phoneCode phone pic banner fullPhone")
       .lean();
-    return res.status(200).json(contacts);
+    const contactMap = new Map<string, (typeof userContacts)[number]>();
+    const notMemberContactNumber = new Set<string>();
+
+    for (let i = 0; i < userContacts.length; i++) {
+      const contact = userContacts[i];
+      if (contact.fullPhone) {
+        contactMap.set(contact.fullPhone, contact);
+        notMemberContactNumber.add(contact.fullPhone);
+      }
+    }
+
+    const registeredUsers =
+      notMemberContactNumber.size > 0
+        ? await User.find({
+            fullPhone: { $in: Array.from(notMemberContactNumber) },
+          })
+            .select("name pic fullPhone")
+            .lean()
+        : [];
+    const memberContactNumber = new Set<string>();
+    const members = [];
+
+    for (let i = 0; i < registeredUsers.length; i++) {
+      const appUser = registeredUsers[i];
+      const phone = appUser.fullPhone;
+      if (phone) {
+        memberContactNumber.add(phone);
+        notMemberContactNumber.delete(phone);
+        const savedContact = contactMap.get(phone);
+        members.push({
+          _id: appUser._id,
+          fullPhone: phone,
+          name: savedContact?.name || appUser.name,
+          pic: appUser.pic || savedContact?.pic,
+          member: true,
+        });
+      }
+    }
+
+    const notMembers = [];
+    for (const phone of notMemberContactNumber) {
+      const savedContact = contactMap.get(phone);
+      if (savedContact) {
+        notMembers.push({
+          _id: savedContact._id,
+          fullPhone: savedContact.fullPhone,
+          name: savedContact?.name || savedContact.fullPhone,
+          pic: savedContact.pic,
+          member: false,
+        });
+      }
+    }
+    return res.status(200).json([...members, ...notMembers]);
   } catch (error) {
     getServerError(res, error, "getContact Controller");
   }

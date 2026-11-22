@@ -18,10 +18,18 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: true,
+      trim: true,
     },
     phoneCode: {
       type: String,
       required: true,
+      trim: true,
+    },
+    fullPhone: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
     },
     pic: {
       type: String,
