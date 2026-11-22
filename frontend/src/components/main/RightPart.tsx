@@ -1,7 +1,6 @@
 "use client";
 
 import { mediaList } from "@/assets/scripts/mediaList";
-import { scrollToSection } from "@/hooks/useScrollToSection";
 import { sendSocketRequest } from "@/redux/slices/SocketSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import { lastSeen } from "@/utils/dateFormats";
@@ -54,7 +53,6 @@ import { updateMainLayout } from "@/redux/slices/LayoutSlice";
 import { useRouter } from "next/navigation";
 import { formatBytes } from "@/utils/formatBytes";
 import RightPartMenu from "./RightPartMenu";
-import Loading from "@/app/(main)/loading";
 import { handleDeleteMessage } from "@/services/MessageDelete";
 import ContactInfo from "./ContactInfo";
 import { NextMessages } from "@/services/NextMessages";
@@ -431,7 +429,7 @@ export default function RightPart({
       dispatch(clearSelectedFileIndex());
     }
   };
- 
+
   useEffect(() => {
     hasUserScrolledForLoad.current = false;
   }, []);
@@ -946,7 +944,7 @@ export const NoChatSelection = () => {
   const [phone, setPhone] = useState<boolean>(false);
   const mainLayout = useAppSelector((store) => store.layout.mainLayout);
   const [mounted, setMounted] = useState(false);
-  const { selectedContact, selectedContactLoading } = useAppSelector(
+  const { selectedContact } = useAppSelector(
     (store) => store.chat,
   );
 
@@ -960,9 +958,6 @@ export const NoChatSelection = () => {
     return () => clearInterval(timer);
   }, []);
 
-  if (selectedContactLoading) {
-    return <Loading />;
-  }
   if (selectedContact) {
     return null;
   }

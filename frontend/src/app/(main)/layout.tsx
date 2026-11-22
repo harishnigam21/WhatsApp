@@ -20,7 +20,6 @@ export default async function RootLayout({
   const dataUser = responseUser.data as { user: User };
   const dataContacts = responseContacts.data as Contact[];
   const dataActiveContacts = responseActiveContacts.data as ActiveContact[];
-
   return (
     <article className="flex grow flex-col text-txpri bg-bgpri">
       <ScreenSize />
