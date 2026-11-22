@@ -32,7 +32,9 @@ export const getChat = async (req: AuthRequest, res: Response) => {
       }
     }
     if (!user) {
-      return res.status(404).json({ message: "No such user found" });
+      return res
+        .status(404)
+        .json({ message: "No such user found", invite: true });
     }
     const currentUserId = new mongoose.Types.ObjectId(req.user?._id);
     const targetId = new mongoose.Types.ObjectId(user._id);

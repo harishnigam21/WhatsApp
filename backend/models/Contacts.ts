@@ -8,9 +8,9 @@ const ContactSchema = new Schema(
       required: true,
     },
     name: String,
-    email: String,
-    pic: String,
-    banner: String,
+    email: { type: String, default: null },
+    pic: { type: String, default: null },
+    banner: { type: String, default: null },
     phone: {
       type: String,
       required: true,
