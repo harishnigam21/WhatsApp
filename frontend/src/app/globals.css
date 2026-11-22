@@ -15,6 +15,19 @@ body {
   --color-border: #212121;
   --color-borderhl: #4d4d4d;
 }
+@theme {
+  --animate-light-bounce: light-bounce 1.8s ease-in-out infinite;
+
+  @keyframes light-bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(5px);
+    }
+  }
+}
 button:disabled {
   opacity: 0.5;
   cursor: none;

@@ -13,6 +13,7 @@ interface stateProps {
     rightpart: boolean;
   };
   mainLoader: boolean;
+  inviteTemplate: boolean;
 }
 const initialState: stateProps = {
   screenSize: {
@@ -27,6 +28,7 @@ const initialState: stateProps = {
     rightpart: false,
   },
   mainLoader: true,
+  inviteTemplate: false,
 };
 const LayoutSlice = createSlice({
   name: "mainLayout",
@@ -54,6 +56,9 @@ const LayoutSlice = createSlice({
     setMainLoader: (state, action: PayloadAction<boolean>) => {
       state.mainLoader = action.payload;
     },
+    setInviteTemplate: (state, action: PayloadAction<boolean>) => {
+      state.inviteTemplate = action.payload;
+    },
   },
 });
 export default LayoutSlice.reducer;
@@ -63,4 +68,5 @@ export const {
   setHideHeader,
   updateMainLayout,
   setMainLoader,
+  setInviteTemplate,
 } = LayoutSlice.actions;

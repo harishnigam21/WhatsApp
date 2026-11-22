@@ -3,16 +3,24 @@ import {
   clearSelectedContact,
   clearSelectionFor,
   selectedContactType,
+  setRightPartActive,
   setSelectedContact,
   setSelectedContactLoading,
   setSelectedFor,
 } from "@/redux/slices/ChatSlice";
+import { setInviteTemplate } from "@/redux/slices/LayoutSlice";
 import { sendSocketRequest } from "@/redux/slices/SocketSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export default function Shell({ dataChat }: { dataChat: selectedContactType }) {
+export default function Shell({
+  dataChat,
+  invite,
+}: {
+  dataChat: selectedContactType;
+  invite: boolean;
+}) {
   const dispatch = useAppDispatch();
   const user = useAppSelector((store) => store.user.userInfo?._id);
   const isConnected = useAppSelector((state) => state.socket.isConnected);
@@ -20,6 +28,12 @@ export default function Shell({ dataChat }: { dataChat: selectedContactType }) {
   const router = useRouter();
 
   useEffect(() => {
+    if (invite) {
+      dispatch(setRightPartActive(true));
+      dispatch(setInviteTemplate(true));
+      dispatch(setSelectedContactLoading(false));
+      return;
+    }
     if (!dataChat) {
       dispatch(clearSelectedContact());
       router.push("/");

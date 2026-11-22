@@ -46,10 +46,13 @@ export default async function RootLayout({
     ? decodedChatId.replace("c=", "")
     : decodedChatId;
   const responseChat = await serverFetch(`api/chat/${id}`, "GET");
-  const dataChat = responseChat.data as selectedContactType;
+  const dataChat = responseChat.data as selectedContactType & {
+    invite?: boolean;
+  };
+  const invite = responseChat.status === 404;
   return (
     <>
-      <Shell dataChat={dataChat} />
+      <Shell dataChat={dataChat} invite={invite} />
       <RightPart>{children}</RightPart>
     </>
   );

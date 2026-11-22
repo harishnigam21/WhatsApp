@@ -64,7 +64,7 @@ export default function Contact({
           />
         </div>
       </div>
-      <div className="flex flex-col gap-2 overflow-y-auto scrollbar-thin scrollbar-thumb-borderhl">
+      <div className="flex flex-col gap-2 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-borderhl">
         {/* new peoples */}
         <div className="flex flex-col">
           {[
@@ -99,7 +99,7 @@ export default function Contact({
               onClick={item.onClick}
               className="flex p-3 gap-4 rounded-xl items-center cursor-pointer hover:bg-bgsec active:bg-bgsec transition-all"
             >
-              <div className="rounded-full p-2 size-11 bg-pri text-black">
+              <div className="rounded-full p-2 min-h-11 min-w-11 aspect-square bg-pri text-black">
                 <item.icon className="size-full" />
               </div>
               <p>{item.name}</p>
@@ -115,7 +115,7 @@ export default function Contact({
             setShowContact(false);
           }}
         >
-          <div className="rounded-full overflow-hidden size-11 bg-pri text-black">
+          <div className="rounded-full overflow-hidden min-h-11 min-w-11 aspect-square bg-pri text-black">
             {user?.pic ? (
               <Image
                 loading="eager"

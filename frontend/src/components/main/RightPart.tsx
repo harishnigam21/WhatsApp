@@ -57,6 +57,7 @@ import { handleDeleteMessage } from "@/services/MessageDelete";
 import ContactInfo from "./ContactInfo";
 import { NextMessages } from "@/services/NextMessages";
 import { FullLoading } from "@/app/(main)/[cid]/loading";
+import InviteContact from "../contact/InviteContact";
 
 export default function RightPart({
   children,
@@ -70,7 +71,9 @@ export default function RightPart({
   ];
   const { selectedContact } = useAppSelector((store) => store.chat);
   const userId = useAppSelector((store) => store.user.userInfo?._id);
-  const mainLayout = useAppSelector((store) => store.layout.mainLayout);
+  const { mainLayout, inviteTemplate } = useAppSelector(
+    (store) => store.layout,
+  );
   const [sendDisable, setSendDisable] = useState<boolean>(false);
   const [showPicker, setShowPicker] = useState<boolean>(false);
   const [showAttachOptions, setShowAttachOptions] = useState<boolean>(false);
@@ -519,6 +522,9 @@ export default function RightPart({
 
   const { handleDelete, loading: deleteLoading } = handleDeleteMessage();
 
+  if (inviteTemplate) {
+    return <InviteContact />;
+  }
   if (!selectedContact) return;
 
   return (
@@ -967,9 +973,9 @@ export const NoChatSelection = () => {
   return (
     mounted && (
       <section
-        className={`${mainLayout.rightpart ? "w-full grow flex flex-col items-center justify-center bg-[color-mix(in_srgb,var(--color-bgpri)_10%,var(--color-bgsec)_100%)]" : "hidden"}`}
+        className={`${mainLayout.rightpart ? "w-full grow flex flex-col items-center justify-center bg-[color-mix(in_srgb,var(--color-bgpri)_10%,var(--color-bgsec)_100%)]" : "hidden"} p-4`}
       >
-        <div className="w-87 rounded-2xl p-4 flex flex-col items-center bg-bgpri/25">
+        <div className="w-full max-w-87 rounded-2xl p-4 flex flex-col items-center bg-bgpri/25">
           <div className="w-50 h-35 mb-8">
             <svg
               xmlns="http://w3.org"

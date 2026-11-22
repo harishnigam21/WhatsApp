@@ -111,7 +111,15 @@ const ChatSlice = createSlice({
       state.activeContacts = action.payload;
     },
     addContact: (state, action: PayloadAction<Contact>) => {
-      state.Contacts.unshift(action.payload);
+      const contact = action.payload;
+      const findContact = state.Contacts.findIndex(
+        (item) => item._id === contact._id,
+      );
+      if (findContact == -1) {
+        state.Contacts.unshift(contact);
+      } else {
+        state.Contacts[findContact] = contact;
+      }
     },
     deleteContact: (state, action: PayloadAction<string>) => {
       const id = action.payload;
