@@ -61,6 +61,7 @@ interface initialStateType {
   selectedFor: boolean;
   selectionFor: string[];
   selectedFileIndex: string | null;
+  rightPartActive: boolean;
 }
 const initialState: initialStateType = {
   selectedContact: null,
@@ -71,6 +72,7 @@ const initialState: initialStateType = {
   selectedFor: false,
   selectionFor: [],
   selectedFileIndex: null,
+  rightPartActive: false,
 };
 const ChatSlice = createSlice({
   name: "chat",
@@ -81,6 +83,9 @@ const ChatSlice = createSlice({
     },
     setSelectedContactLoading: (state, action: PayloadAction<boolean>) => {
       state.selectedContactLoading = action.payload;
+    },
+    setRightPartActive: (state, action: PayloadAction<boolean>) => {
+      state.rightPartActive = action.payload;
     },
     clearSelectedContact: (state) => {
       state.selectedContact = null;
@@ -484,5 +489,6 @@ export const {
   nextMessages,
   setSelectedFileIndex,
   clearSelectedFileIndex,
+  setRightPartActive,
 } = ChatSlice.actions;
 export default ChatSlice.reducer;

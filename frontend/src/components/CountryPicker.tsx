@@ -32,12 +32,12 @@ export default function CountryPicker({
   mobileNumber,
   setMobileNumber,
   setCountryCode,
-  handlSendOTP,
+  handleSubmit,
 }: {
   mobileNumber: string | null;
   setMobileNumber: React.Dispatch<React.SetStateAction<string | null>>;
   setCountryCode: React.Dispatch<React.SetStateAction<string | null>>;
-  handlSendOTP: () => void;
+  handleSubmit: () => void;
 }) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -169,7 +169,7 @@ export default function CountryPicker({
             }}
             onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
               if (e.key == "Enter") {
-                handlSendOTP();
+                handleSubmit();
               }
             }}
           />

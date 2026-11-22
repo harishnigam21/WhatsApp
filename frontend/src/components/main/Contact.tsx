@@ -1,4 +1,7 @@
-import { setSelectedContactLoading } from "@/redux/slices/ChatSlice";
+import {
+  setRightPartActive,
+  setSelectedContactLoading,
+} from "@/redux/slices/ChatSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import { ArrowLeft, Search } from "lucide-react";
 import Image from "next/image";

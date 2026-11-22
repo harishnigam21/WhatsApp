@@ -56,6 +56,7 @@ import RightPartMenu from "./RightPartMenu";
 import { handleDeleteMessage } from "@/services/MessageDelete";
 import ContactInfo from "./ContactInfo";
 import { NextMessages } from "@/services/NextMessages";
+import { FullLoading } from "@/app/(main)/[cid]/loading";
 
 export default function RightPart({
   children,
@@ -944,7 +945,7 @@ export const NoChatSelection = () => {
   const [phone, setPhone] = useState<boolean>(false);
   const mainLayout = useAppSelector((store) => store.layout.mainLayout);
   const [mounted, setMounted] = useState(false);
-  const { selectedContact } = useAppSelector(
+  const { selectedContact, selectedContactLoading } = useAppSelector(
     (store) => store.chat,
   );
 
@@ -957,7 +958,9 @@ export const NoChatSelection = () => {
 
     return () => clearInterval(timer);
   }, []);
-
+  if (selectedContactLoading) {
+    return <FullLoading />;
+  }
   if (selectedContact) {
     return null;
   }

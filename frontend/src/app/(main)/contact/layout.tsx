@@ -6,9 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  return (
-    <section className="grow flex items-center justify-center p-1 bg-[color-mix(in_srgb,var(--color-bgpri)_10%,var(--color-bgsec)_100%)]">
-      {children}
-    </section>
-  );
+  return children;
 }

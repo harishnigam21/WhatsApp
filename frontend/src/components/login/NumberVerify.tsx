@@ -47,7 +47,7 @@ export default function NumberVerify({
               mobileNumber={mobileNumber}
               setMobileNumber={setMobileNumber}
               setCountryCode={setCountryCode}
-              handlSendOTP={handlSendOTP}
+              handleSubmit={handlSendOTP}
             />
             {sendOTPLoading ? (
               <div className="flex flex-nowrap items-center gap-1">

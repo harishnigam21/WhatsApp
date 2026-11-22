@@ -2,7 +2,6 @@
 
 import {
   clearSelectedContact,
-  setSelectedContactLoading,
 } from "@/redux/slices/ChatSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import {

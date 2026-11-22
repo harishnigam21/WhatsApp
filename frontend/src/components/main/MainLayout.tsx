@@ -5,6 +5,7 @@ import LeftPart from "./LeftPart";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import { updateMainLayout } from "@/redux/slices/LayoutSlice";
 import WhatsAppLoading from "../loader/WhatsAppLoading";
+import { setRightPartActive } from "@/redux/slices/ChatSlice";
 export default function MainLayout({
   children,
 }: {
@@ -13,9 +14,8 @@ export default function MainLayout({
   const dispatch = useAppDispatch();
   const swidth = useAppSelector((store) => store.layout.screenSize.width);
   const mainLoader = useAppSelector((store) => store.layout.mainLoader);
-  const { selectedContact, selectedContactLoading } = useAppSelector(
-    (store) => store.chat,
-  );
+  const { selectedContact, selectedContactLoading, rightPartActive } =
+    useAppSelector((store) => store.chat);
   const [sidebarpop, setSidebarPop] = useState<boolean>(false);
   useEffect(() => {
     let layout;
@@ -32,17 +32,38 @@ export default function MainLayout({
         leftpart: true,
       };
     } else if (swidth >= 420) {
-      layout = selectedContact
+      layout = rightPartActive
         ? { rightpart: true, sidebar: false, leftpart: false }
         : { rightpart: false, sidebar: true, leftpart: true };
     } else {
-      layout = selectedContact
+      layout = rightPartActive
         ? { rightpart: true, sidebar: false, leftpart: false }
         : { rightpart: false, sidebar: false, leftpart: true };
     }
 
     dispatch(updateMainLayout(layout));
-  }, [swidth, selectedContact, dispatch]);
+  }, [swidth, dispatch]);
+  useEffect(() => {
+    if (swidth <= 768) {
+      if (rightPartActive) {
+        dispatch(
+          updateMainLayout({
+            sidebar: false,
+            leftpart: false,
+            rightpart: true,
+          }),
+        );
+      } else {
+        dispatch(
+          updateMainLayout({
+            sidebar: false,
+            leftpart: true,
+            rightpart: false,
+          }),
+        );
+      }
+    }
+  }, [rightPartActive]);
   useEffect(() => {
     if (selectedContactLoading && swidth <= 768) {
       dispatch(
@@ -57,6 +78,13 @@ export default function MainLayout({
   useEffect(() => {
     setSidebarPop(false);
   }, [swidth]);
+  useEffect(() => {
+    if (selectedContact) {
+      dispatch(setRightPartActive(true));
+    } else {
+      dispatch(setRightPartActive(false));
+    }
+  }, [selectedContact]);
   if (mainLoader) return <WhatsAppLoading animateClass="loading-progress2" />;
   return (
     <section className="w-full h-full grow flex overflow-hidden">
