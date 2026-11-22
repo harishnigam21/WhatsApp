@@ -6,6 +6,7 @@ import Auth from "./routes/Auth";
 import Message from "./routes/Message";
 import Users from "./routes/Users";
 import Chat from "./routes/Chat";
+import Contact from "./routes/Contact";
 import corsOptions from "./config/cors";
 import { envList } from "./envConfig";
 import { Server } from "socket.io";
@@ -99,6 +100,7 @@ app.use("/api/auth", Auth);
 app.use("/api/message", Message);
 app.use("/api/users", Users);
 app.use("/api/chat", Chat);
+app.use("/api/contacts", Contact);
 
 app.get("/", (req, res) =>
   res.status(200).json({ message: "Backend Server running successfully" }),
