@@ -177,7 +177,6 @@ export const getContacts = async (req: AuthRequest, res: Response) => {
         const savedContact = contactMap.get(phone);
         members.push({
           _id: appUser._id,
-          fullPhone: phone,
           name: savedContact?.name || appUser.name,
           pic: appUser.pic || savedContact?.pic,
           member: true,
@@ -191,7 +190,6 @@ export const getContacts = async (req: AuthRequest, res: Response) => {
       if (savedContact) {
         notMembers.push({
           _id: savedContact._id,
-          fullPhone: savedContact.fullPhone,
           name: savedContact?.name || savedContact.fullPhone,
           pic: savedContact.pic,
           member: false,

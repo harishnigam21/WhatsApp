@@ -29,7 +29,7 @@ export interface Contact {
   _id: string;
   name: string;
   pic: string;
-  bio: string;
+  member: boolean;
 }
 export interface ActiveContact {
   _id: string;

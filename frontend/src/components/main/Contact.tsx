@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { IoKeypad } from "react-icons/io5";
 import { MdGroupAdd, MdGroups, MdPersonAddAlt1 } from "react-icons/md";
 import ContactList from "./ContactList";
+import toast from "react-hot-toast";
 
 export default function Contact({
   showContact,
@@ -64,12 +65,35 @@ export default function Contact({
         {/* new peoples */}
         <div className="flex flex-col">
           {[
-            { icon: MdGroupAdd, name: "New Group" },
-            { icon: MdPersonAddAlt1, name: "New Contact" },
-            { icon: MdGroups, name: "New Community" },
+            {
+              icon: MdGroupAdd,
+              name: "New Group",
+              onClick: () => {
+                toast.dismiss();
+                toast.error("Coming Soon - We are working on Group Feature !");
+              },
+            },
+            {
+              icon: MdPersonAddAlt1,
+              name: "New Contact",
+              onClick: () => {
+                router.push("/contact");
+              },
+            },
+            {
+              icon: MdGroups,
+              name: "New Community",
+              onClick: () => {
+                toast.dismiss();
+                toast.error(
+                  "Coming Soon - We are working on Community Feature !",
+                );
+              },
+            },
           ].map((item, i) => (
             <div
               key={`contactpanel/new/list/${i}`}
+              onClick={item.onClick}
               className="flex p-3 gap-4 rounded-xl items-center cursor-pointer hover:bg-bgsec active:bg-bgsec transition-all"
             >
               <div className="rounded-full p-2 size-11 bg-pri text-black">
