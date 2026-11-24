@@ -20,7 +20,7 @@ export default function ContactList({
         router.push(`/c=${item._id}`);
         setShowContact(false);
       }}
-      className="flex p-3 gap-4 rounded-xl items-center cursor-pointer hover:bg-bgsec active:bg-bgsec transition-all overflow-hidden"
+      className="flex p-3 gap-4 rounded-xl items-center cursor-pointer hover:bg-bgsec active:bg-bgsec transition-all"
     >
       <div className="rounded-full overflow-hidden min-h-11 min-w-11 aspect-square bg-pri/70 text-txpri">
         {item.pic ? (
@@ -38,15 +38,14 @@ export default function ContactList({
           </div>
         )}
       </div>
-      <div className="flex flex-col justify-between grow break-all line-clamp-1">
-        <p className="">{item.name}</p>
-      </div>
+      <p className="grow break-all line-clamp-1">{item.name}</p>
       {!item.member && (
         <button
+          title="Send Invitation"
           onClick={(e) => {
             e.stopPropagation();
           }}
-          className="border border-blue-500 rounded-full text-[10px] py-0.5 px-1 text-blue-500 cursor-pointer"
+          className="hover:border hover:border-pri rounded-full text-xs py-0.5 px-1 text-pri transition-all font-semibold cursor-pointer"
         >
           Send Invite
         </button>

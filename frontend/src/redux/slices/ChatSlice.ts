@@ -121,6 +121,15 @@ const ChatSlice = createSlice({
         state.Contacts[findContact] = contact;
       }
     },
+    bulkAddContact: (state, action: PayloadAction<Contact[]>) => {
+      const newContact = action.payload;
+      const newContactIds = newContact.map((item) => item._id);
+      const existingContact = state.Contacts;
+      state.Contacts = [
+        ...newContact,
+        ...existingContact.filter((item) => !newContactIds.includes(item._id)),
+      ];
+    },
     deleteContact: (state, action: PayloadAction<string>) => {
       const id = action.payload;
       state.Contacts = state.Contacts.filter((item) => item._id !== id);
@@ -498,5 +507,6 @@ export const {
   setSelectedFileIndex,
   clearSelectedFileIndex,
   setRightPartActive,
+  bulkAddContact,
 } = ChatSlice.actions;
 export default ChatSlice.reducer;
