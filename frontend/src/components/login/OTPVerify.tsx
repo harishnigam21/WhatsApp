@@ -67,7 +67,6 @@ export default function OTPVerify({
   //             payload: responseData.user._id,
   //           });
   //         }
-  //         window.localStorage.setItem("actk", responseData.actk);
   //         router.push("/");
   //       } else {
   //         const msg = responseData?.message || "Failed to verify OTP";

@@ -230,7 +230,6 @@ export default function Main() {
                 payload: responseData.user._id,
               });
             }
-            window.localStorage.setItem("actk", responseData.actk);
             router.push("/");
           } else {
             if (responseData.moreDetails) {
