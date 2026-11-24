@@ -33,7 +33,6 @@ const useApi = <T = unknown>() => {
   const handleGlobalStatus = useCallback(
     (statusCode: number) => {
       if (statusCode === 401) {
-        localStorage.removeItem("actk");
         dispatch(setLoginStatus("unauthenticated"));
         router.push("/login");
       }
@@ -54,13 +53,10 @@ const useApi = <T = unknown>() => {
       setError(null);
       setStatus(null);
 
-      const updateUrl = `${process.env.NEXT_PUBLIC_BACKEND_HOST}/${url}`;
+      const updateUrl = `/api/proxy/${url}`;
 
       const makeRequest = async () => {
         const headers: Record<string, string> = {
-          Authorization: localStorage.getItem("actk")
-            ? `Bearer ${localStorage.getItem("actk")}`
-            : "",
           ...customHeaders,
         };
 
@@ -95,7 +91,7 @@ const useApi = <T = unknown>() => {
         ) {
           try {
             const refreshRes = await fetch(
-              `${process.env.NEXT_PUBLIC_BACKEND_HOST}/api/refresh`,
+              `${process.env.NEXT_PUBLIC_BACKEND_HOST}/api/auth/refresh`,
               {
                 method: "GET",
                 credentials: "include",
@@ -105,7 +101,6 @@ const useApi = <T = unknown>() => {
             if (!refreshRes.ok) throw new Error("Refresh failed");
 
             const refreshData = await refreshRes.json();
-            localStorage.setItem("actk", refreshData.actk);
             dispatch(setUser(refreshData.data));
             dispatch(setLoginStatus("authenticated"));
             return await sendRequest(
@@ -118,7 +113,6 @@ const useApi = <T = unknown>() => {
             );
           } catch (err) {
             console.error(err);
-            localStorage.removeItem("actk");
             dispatch(setLoginStatus("unauthenticated"));
             router.push("/login");
 
