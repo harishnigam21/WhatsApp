@@ -24,11 +24,13 @@
     "http": "^0.0.1-security",
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
+    "libphonenumber-js": "^1.13.17",
     "mongoose": "^9.2.1",
     "multer": "^2.4.0",
     "nodemon": "^3.1.11",
     "socket.io": "^4.8.3",
-    "twilio": "^6.1.2"
+    "twilio": "^6.1.2",
+    "vcf": "^2.1.2"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -37,6 +39,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.3.0",
+    "@types/vcf": "^2.0.7",
     "i": "^0.3.7",
     "npm": "^12.2.0",
     "tsx": "^4.23.13",

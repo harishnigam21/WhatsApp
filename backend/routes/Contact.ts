@@ -1,7 +1,10 @@
 import express from "express";
-import { createContact } from "../controllers/Contact";
+import { createContact, importContact } from "../controllers/Contact";
 import jwtVerifier from "../middlewares/jwt/jwtVerifier";
-
+import multer from "multer";
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 const router = express.Router();
 router.route("/new").post(jwtVerifier, createContact);
+router.route("/import").post(jwtVerifier, upload.single("vcf"), importContact);
 export default router;
