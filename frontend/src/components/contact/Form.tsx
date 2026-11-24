@@ -110,9 +110,6 @@ export default function Form() {
 
   const syncContacts = async () => {
     // Check browser support
-    console.log("Browser:", navigator.userAgent);
-    console.log("Secure context:", window.isSecureContext);
-    console.log("API available:", "contacts" in navigator);
     if (!("contacts" in navigator)) {
       toast.error("Contact Sync is not supported in this device.");
       return;
@@ -136,6 +133,7 @@ export default function Form() {
           });
         }
       });
+      if (contacts.length === 0) return;
       const vcfBlob = createVCF(Array.from(formattedContacts));
       const vcfFile = new File([vcfBlob], "contacts.vcf", {
         type: "text/vcard",
