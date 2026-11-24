@@ -177,6 +177,7 @@ export const getContacts = async (req: AuthRequest, res: Response) => {
         const savedContact = contactMap.get(phone);
         members.push({
           _id: appUser._id,
+          fullPhone: appUser.fullPhone,
           name: savedContact?.name || appUser.name,
           pic: appUser.pic || savedContact?.pic,
           member: true,
@@ -190,13 +191,23 @@ export const getContacts = async (req: AuthRequest, res: Response) => {
       if (savedContact) {
         notMembers.push({
           _id: savedContact._id,
+          fullPhone: savedContact.fullPhone,
           name: savedContact?.name || savedContact.fullPhone,
           pic: savedContact.pic,
           member: false,
         });
       }
     }
-    return res.status(200).json([...members, ...notMembers]);
+
+    const sortedContacts = [...members, ...notMembers].sort((a, b) => {
+      const nameA = a.name?.trim() || "";
+      const nameB = b.name?.trim() || "";
+      if (!nameA && !nameB) return 0;
+      if (!nameA) return 1;
+      if (!nameB) return -1;
+      return nameA.localeCompare(nameB);
+    });
+    return res.status(200).json(sortedContacts);
   } catch (error) {
     getServerError(res, error, "getContact Controller");
   }
@@ -209,7 +220,7 @@ export const getActiveContacts = async (req: AuthRequest, res: Response) => {
       .populate({
         path: "participants",
         match: { _id: { $ne: userId } },
-        select: "_id name pic lastSeen",
+        select: "_id name pic fullPhone lastSeen",
       })
       .populate(
         "lastMessage",

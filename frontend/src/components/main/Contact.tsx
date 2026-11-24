@@ -1,7 +1,4 @@
-import {
-  setRightPartActive,
-  setSelectedContactLoading,
-} from "@/redux/slices/ChatSlice";
+import { setSelectedContactLoading } from "@/redux/slices/ChatSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import { ArrowLeft, Search } from "lucide-react";
 import Image from "next/image";
@@ -10,6 +7,7 @@ import { IoKeypad } from "react-icons/io5";
 import { MdGroupAdd, MdGroups, MdPersonAddAlt1 } from "react-icons/md";
 import ContactList from "./ContactList";
 import toast from "react-hot-toast";
+import { useContactSearch } from "@/hooks/useContactSearch";
 
 export default function Contact({
   showContact,
@@ -22,10 +20,12 @@ export default function Contact({
   searchFocus: boolean;
   setSearcFocus: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
-  const user = useAppSelector((store) => store.user.userInfo);
   const { Contacts } = useAppSelector((store) => store.chat);
+  const { search, setSearch, filteredContacts } = useContactSearch(Contacts);
+  const user = useAppSelector((store) => store.user.userInfo);
   const dispatch = useAppDispatch();
   const router = useRouter();
+
   return (
     <article
       className={`flex flex-col gap-2 absolute top-0 left-0 ${showContact ? "w-full opacity-100" : "w-0 opacity-0 p-0"} transition-all ease-in-out h-full z-20 bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)] duration-500 whitespace-nowrap overflow-x-hidden`}
@@ -50,6 +50,7 @@ export default function Contact({
         >
           <Search strokeWidth={1} size={16} />
           <input
+            value={search}
             type="searchPeople"
             name="searchPeople"
             id="searchPeople"
@@ -61,6 +62,7 @@ export default function Contact({
             onBlur={() => {
               setSearcFocus(false);
             }}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
@@ -139,7 +141,7 @@ export default function Contact({
           </div>
         </div>
         {/* other contacts */}
-        {Contacts.map((item, i) => (
+        {filteredContacts.map((item, i) => (
           <ContactList
             key={`contact/other/${i}`}
             item={item}
