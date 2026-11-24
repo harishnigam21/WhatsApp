@@ -99,7 +99,7 @@ export default function RightPart({
   const prevHeightRef = useRef<number>(0);
   const dispatch = useAppDispatch();
   const router = useRouter();
-
+  
   const handleSendMessage = async () => {
     const attachmentSize: number =
       Number(process.env.NEXT_PUBLIC_ATTACHMENT_SIZE) || 10485760;

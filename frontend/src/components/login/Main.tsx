@@ -10,10 +10,15 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
 } from "firebase/auth";
-import { auth } from "@/utils/firebase";
+import {
+  auth,
+  firebaseErrorMessages,
+  validatePhoneNumber,
+} from "@/utils/firebase";
 import { setLoginStatus, setUser, User } from "@/redux/slices/UserSlice";
 import { useAppDispatch } from "@/redux/Store";
 import { useRouter } from "next/navigation";
+import { FirebaseError } from "firebase/app";
 
 export default function Main() {
   const [sendOTPLoading, setSendOTPLoading] = useState<boolean>(false);
@@ -68,9 +73,7 @@ export default function Main() {
         "recaptcha-container",
         {
           size: "invisible",
-          callback: () => {
-            console.log("reCAPTCHA solved");
-          },
+          callback: () => {},
         },
         auth,
       );
@@ -85,13 +88,16 @@ export default function Main() {
     if (sendOTPLoading) return;
     setSendOTPLoading(true);
     try {
-      if (sendOTPLoading) return;
       if (!countryCode) {
         toast.error("No country code selected");
         return;
       }
       if (!mobileNumber) {
         toast.error("Mobile number is required");
+        return;
+      }
+      if (!validatePhoneNumber(`${countryCode + mobileNumber}`)) {
+        toast.error("Invalid phone number");
         return;
       }
       const appVerifier = await setupRecaptcha();
@@ -109,10 +115,12 @@ export default function Main() {
       toast.success("OTP sent successfully!");
     } catch (error) {
       let msg = "Failed to send OTP";
-      if (error instanceof Error) {
-        msg = error.message;
+      if (error instanceof FirebaseError) {
+        msg =
+          firebaseErrorMessages[error.code] ??
+          "Something went wrong. Please try again.";
       }
-      console.log("Error sending OTP:", error);
+      console.log("Error sending OTP");
       toast.error(msg);
     } finally {
       setSendOTPLoading(false);
