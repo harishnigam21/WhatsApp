@@ -43,8 +43,12 @@ export default function Shell({
       dispatch(setSelectedFor(false));
       dispatch(clearSelectionFor());
     }
+    return () => {
+      dispatch(clearSelectedContact());
+    };
   }, [dispatch, dataChat]);
   useEffect(() => {
+    if (!dataChat) return;
     const selected = activeContacts.find((item) => item._id == dataChat._id);
     if (!isConnected || !user || !dataChat?._id || selected?.unread == 0)
       return;

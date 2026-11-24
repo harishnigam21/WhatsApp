@@ -13,7 +13,10 @@ async function handler(
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("actk")?.value;
 
-    if (!accessToken) {
+    const publicRoutes = ["auth"];
+    const isPublicRoute =
+      path[0] === "api" && publicRoutes.includes(path[1]);
+    if (!accessToken && !isPublicRoute) {
       return Response.json({ message: "Unauthorized" }, { status: 401 });
     }
 
