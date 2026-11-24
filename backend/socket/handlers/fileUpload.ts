@@ -189,6 +189,7 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
             phone: userDoc.phone,
             phoneCode: userDoc.phoneCode,
             pic: userDoc.pic || null,
+            fullPhone:userDoc.fullPhone,
             banner: userDoc.banner || null,
             bio: userDoc.bio,
             lastSeen: userDoc.lastSeen,

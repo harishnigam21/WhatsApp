@@ -128,6 +128,7 @@ export function sendMessage(io: Server, socket: Socket) {
           email: userDoc.email,
           phone: userDoc.phone,
           phoneCode: userDoc.phoneCode,
+          fullPhone: userDoc.fullPhone,
           pic: userDoc.pic || null,
           banner: userDoc.banner || null,
           bio: userDoc.bio,
