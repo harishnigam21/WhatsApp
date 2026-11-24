@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import CountryPicker from "../CountryPicker";
-import { Import, LoaderCircle, Plus, X } from "lucide-react";
+import { Import, LoaderCircle, Plus, RefreshCcw, X } from "lucide-react";
 import useApi from "@/hooks/useApi";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import {
@@ -26,6 +26,7 @@ export default function Form() {
   const importRef = useRef<HTMLDivElement>(null);
   const manualRef = useRef<HTMLDivElement>(null);
   const [vcfFile, setVcfFile] = useState<File | null>(null);
+  const [syncLoading, setSyncLoading] = useState(false);
   const dispatch = useAppDispatch();
   const router = useRouter();
   useEffect(() => {
@@ -55,6 +56,7 @@ export default function Form() {
           dispatch(addContact(resultData.data));
           setMobileNumber(null);
           setName("");
+          handelExist();
         } else {
           throw new Error(resultData?.message || "Failed to add contact.");
         }
@@ -89,6 +91,7 @@ export default function Form() {
           dispatch(bulkAddContact(data));
           setVcfFile(null);
           toast.success("Successfully Imported");
+          handelExist();
         } else {
           const data = result.data as { message: string };
           let msg = data.message || "Failed to Import";
@@ -109,6 +112,7 @@ export default function Form() {
   };
 
   const syncContacts = async () => {
+    setSyncLoading(true);
     // Check browser support
     if (!("contacts" in navigator)) {
       toast.error("Contact Sync is not supported in this device.");
@@ -142,8 +146,15 @@ export default function Form() {
       setVcfFile(vcfFile);
       handleImport(vcfFile);
     } catch (error) {
-      console.error("Contact Sync failed");
+      toast.error("Device Contact import failed");
+    } finally {
+      setSyncLoading(false);
     }
+  };
+
+  const handelExist = () => {
+    dispatch(clearSelectedContact());
+    router.push("/");
   };
 
   return (
@@ -152,10 +163,7 @@ export default function Form() {
     >
       <div
         className="absolute top-1 right-1 cursor-pointer p-1 rounded-full hover:bg-borderhl/40 active:bg-borderhl/40 transition-all"
-        onClick={() => {
-          dispatch(clearSelectedContact());
-          router.push("/");
-        }}
+        onClick={handelExist}
       >
         <X size={25} strokeWidth={1} className="" />
       </div>
@@ -172,9 +180,16 @@ export default function Form() {
           <div className="w-8/10 grow flex flex-col justify-around">
             <button
               onClick={syncContacts}
-              className="rounded-full py-2.5 px-4 w-full border border-borderhl cursor-pointer font-medium hover:bg-pri/40 active:bg-pri/40 transition-all duration-700 break-all line-clamp-1"
+              className="rounded-full py-2.5 px-4 w-full border border-borderhl cursor-pointer font-medium hover:bg-pri/40 active:bg-pri/40 transition-all duration-700 break-all line-clamp-1 flex flex-nowrap items-center justify-center gap-2 relative"
             >
               This Device Contacts
+              {syncLoading && (
+                <RefreshCcw
+                  size={14}
+                  strokeWidth={4}
+                  className="animate-spin text-pri absolute right-4"
+                />
+              )}
             </button>
             <label
               htmlFor="uploadvcf"
