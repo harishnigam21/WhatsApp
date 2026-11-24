@@ -100,6 +100,47 @@ export default function Form() {
         ),
       );
   };
+
+  ("use client");
+
+  type ImportedContact = {
+    name: string[];
+    tel: string[];
+    email: string[];
+  };
+
+  const syncContacts = async () => {
+    // Check browser support
+    if (!("contacts" in navigator)) {
+      toast.error("Contact Sync is not supported in this browser.");
+      return;
+    }
+
+    try {
+      const contacts: ImportedContact[] = await (
+        navigator as any
+      ).contacts.select(["name", "tel", "email"], { multiple: true });
+      const formattedContacts: Set<{
+        name: string;
+        tel: string;
+        email: string;
+      }> = new Set();
+      contacts.forEach((c) => {
+        if (c.tel.length > 0) {
+          formattedContacts.add({
+            name: c.name?.[0] || "",
+            email: c.email?.[0] || "",
+            tel: c.tel[0] || "",
+          });
+        }
+      });
+      const vcfFile = createVCF(Array.from(formattedContacts));
+      console.log(vcfFile);
+    } catch (error) {
+      console.error("Contact Sync failed");
+    }
+  };
+
   return (
     <section
       className={`relative ${mainLayout.rightpart ? "grow flex items-center justify-center p-4 bg-[color-mix(in_srgb,var(--color-bgpri)_10%,var(--color-bgsec)_100%)]" : "hidden"}`}
@@ -124,7 +165,10 @@ export default function Form() {
           </h3>
 
           <div className="w-8/10 grow flex flex-col justify-around">
-            <button className="rounded-full py-2.5 px-4 w-full border border-borderhl cursor-pointer font-medium hover:bg-pri/40 transition-all duration-700 break-all line-clamp-1">
+            <button
+              onClick={syncContacts}
+              className="rounded-full py-2.5 px-4 w-full border border-borderhl cursor-pointer font-medium hover:bg-pri/40 transition-all duration-700 break-all line-clamp-1"
+            >
               Sync From This Device
             </button>
             <label
