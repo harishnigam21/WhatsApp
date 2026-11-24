@@ -26,9 +26,11 @@ const ContactSchema = new Schema(
       required: true,
       trim: true,
       index: true,
+      unique: true,
     },
   },
   { timestamps: true },
 );
-ContactSchema.index({ userId: 1 });
+ContactSchema.index({ userId: 1, fullPhone: 1 });
+ContactSchema.index({ userId: 1, phone: 1, phoneCode: 1 });
 export default mongoose.model("contacts", ContactSchema);

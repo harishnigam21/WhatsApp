@@ -30,6 +30,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
       index: true,
+      unique: true,
     },
     pic: {
       type: String,
