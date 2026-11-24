@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { formatBytes } from "@/utils/formatBytes";
 import { createVCF } from "@/utils/createVCF";
+import { validatePhoneNumber } from "@/utils/firebase";
 
 export default function Form() {
   const { sendRequest, loading } = useApi();
@@ -42,6 +43,10 @@ export default function Form() {
     }
     if (!mobileNumber) {
       toast.error("Mobile number requires");
+      return;
+    }
+    if (!validatePhoneNumber(`${countryCode + mobileNumber}`)) {
+      toast.error("Invalid Mobile Number");
       return;
     }
     sendRequest("api/contacts/new", "POST", {

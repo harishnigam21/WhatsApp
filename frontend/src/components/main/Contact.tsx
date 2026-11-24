@@ -28,9 +28,9 @@ export default function Contact({
   const router = useRouter();
   return (
     <article
-      className={`flex flex-col gap-2 absolute top-0 left-0 ${showContact ? "w-full p-4 opacity-100" : "w-0 opacity-0 p-0"} transition-all ease-in-out h-full z-20 bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)] duration-500 whitespace-nowrap overflow-x-hidden`}
+      className={`flex flex-col gap-2 absolute top-0 left-0 ${showContact ? "w-full opacity-100" : "w-0 opacity-0 p-0"} transition-all ease-in-out h-full z-20 bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)] duration-500 whitespace-nowrap overflow-x-hidden`}
     >
-      <div className="flex flex-col gap-2 sticky top-0 ">
+      <div className="flex flex-col gap-2 sticky top-0 p-3">
         {/* heading */}
         <div className="flex flex-nowrap justify-between gap-2 items-center">
           <div className="flex flex-nowrap gap-3 items-center">
@@ -64,7 +64,7 @@ export default function Contact({
           />
         </div>
       </div>
-      <div className="flex flex-col gap-2 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-borderhl">
+      <div className="flex flex-col gap-2 pl-2 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-borderhl">
         {/* new peoples */}
         <div className="flex flex-col">
           {[
