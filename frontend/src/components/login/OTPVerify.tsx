@@ -133,10 +133,39 @@ export default function OTPVerify({
                     next[i] = target;
                     return next as OTPState;
                   });
-                  if (i == otp.length - 1 || target === "") {
+                  if (i == otp.length - 1 || !target) {
                     setSelectedOTPblock(i);
                   } else {
                     setSelectedOTPblock(i + 1);
+                  }
+                }
+              }}
+              onKeyDown={(e) => {
+                const target = e.currentTarget.value.slice(-1) as string;
+                if (e.key === "Enter") {
+                  if (target === "" || /^[0-9]$/.test(target)) {
+                    setOTP((prev) => {
+                      const next = [...prev];
+                      next[i] = target;
+                      return next as OTPState;
+                    });
+                    if (i == otp.length - 1 || !target) {
+                      setSelectedOTPblock(i);
+                    } else {
+                      setSelectedOTPblock(i + 1);
+                    }
+                  }
+                } else if (e.key === "Backspace") {
+                  e.preventDefault();
+                  setOTP((prev) => {
+                    const next = [...prev];
+                    next[i] = "";
+                    return next as OTPState;
+                  });
+                  if (i == 0) {
+                    setSelectedOTPblock(i);
+                  } else {
+                    setSelectedOTPblock(i - 1);
                   }
                 }
               }}
