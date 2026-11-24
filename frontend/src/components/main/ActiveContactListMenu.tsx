@@ -1,3 +1,4 @@
+import { useUnFocus } from "@/hooks/useUnFocus";
 import {
   Archive,
   BellOff,
@@ -8,7 +9,7 @@ import {
   Pin,
   Trash,
 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 export default function ActiveContactListMenu({
   setOptions,
@@ -16,21 +17,8 @@ export default function ActiveContactListMenu({
   setOptions: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const optionRef = useRef<HTMLOListElement>(null);
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as HTMLElement;
-      if (
-        optionRef.current &&
-        !optionRef.current.contains(event.target as Node) &&
-        target.id !== "activecontactellipsis" &&
-        !target.closest("#activecontactellipsis")
-      ) {
-        setOptions(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useUnFocus("activecontactellipsis", setOptions, optionRef);
+
   return (
     <ol
       ref={optionRef}

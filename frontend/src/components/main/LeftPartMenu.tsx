@@ -1,3 +1,4 @@
+import { useUnFocus } from "@/hooks/useUnFocus";
 import {
   LockKeyhole,
   LogOut,
@@ -5,7 +6,7 @@ import {
   SquareCheck,
   Star,
 } from "lucide-react";
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { MdGroupAdd } from "react-icons/md";
 
 export default function LeftPartMenu({
@@ -14,21 +15,7 @@ export default function LeftPartMenu({
   setOptions: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const optionRef = useRef<HTMLOListElement>(null);
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as HTMLElement;
-      if (
-        optionRef.current &&
-        !optionRef.current.contains(event.target as Node) &&
-        target.id !== "leftellipsis" &&
-        !target.closest("#leftellipsis")
-      ) {
-        setOptions(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useUnFocus("leftellipsis", setOptions, optionRef);
   return (
     <ol
       ref={optionRef}

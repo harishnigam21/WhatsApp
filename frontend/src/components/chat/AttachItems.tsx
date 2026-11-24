@@ -1,3 +1,4 @@
+import { useUnFocus } from "@/hooks/useUnFocus";
 import { useAppDispatch } from "@/redux/Store";
 import {
   CalendarDays,
@@ -7,7 +8,7 @@ import {
   Images,
   UserRound,
 } from "lucide-react";
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 
 export default function AttachItems({
   files,
@@ -23,19 +24,7 @@ export default function AttachItems({
   >;
 }) {
   const attachRef = useRef<HTMLOListElement>(null);
-  const dispatch = useAppDispatch();
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        attachRef.current &&
-        !attachRef.current.contains(event.target as Node)
-      ) {
-        setShowAttachOptions(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useUnFocus("na", setShowAttachOptions, attachRef);
   if (showAttachOptions) {
     return (
       <ol

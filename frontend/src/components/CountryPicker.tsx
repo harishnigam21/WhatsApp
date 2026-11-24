@@ -1,5 +1,6 @@
 "use client";
 
+import { useUnFocus } from "@/hooks/useUnFocus";
 import { ChevronDownIcon } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 import ReactCountryFlag from "react-country-flag";
@@ -50,18 +51,7 @@ export default function CountryPicker({
       () => countryData?.find((c) => c.code === code) || countryData[0],
     );
   };
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useUnFocus("na", setIsOpen, dropdownRef);
 
   const filteredCountries = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();

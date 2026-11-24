@@ -1,8 +1,7 @@
 "use client";
 
-import {
-  clearSelectedContact,
-} from "@/redux/slices/ChatSlice";
+import { useUnFocus } from "@/hooks/useUnFocus";
+import { clearSelectedContact } from "@/redux/slices/ChatSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import {
   Bot,
@@ -17,7 +16,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 export default function SideBar({
   sidebarpop,
@@ -31,21 +30,7 @@ export default function SideBar({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const menuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as HTMLElement;
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target as Node) &&
-        target.id !== "sidebarbtn" &&
-        !target.closest("#sidebarbtn")
-      ) {
-        setSidebarPop(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useUnFocus("sidebarbtn", setSidebarPop, menuRef);
   return (
     <section
       ref={menuRef}

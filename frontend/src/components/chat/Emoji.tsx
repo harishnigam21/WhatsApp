@@ -1,5 +1,6 @@
+import { useUnFocus } from "@/hooks/useUnFocus";
 import EmojiPicker, { Theme, type EmojiClickData } from "emoji-picker-react";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 interface EmojiProps {
   setMessage: React.Dispatch<React.SetStateAction<string>>;
@@ -16,18 +17,8 @@ export default function Emoji({
     setMessage((prev) => prev + emojiData.emoji);
   };
   const emojiRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        emojiRef.current &&
-        !emojiRef.current.contains(event.target as Node)
-      ) {
-        setShowPicker(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useUnFocus("na", setShowPicker, emojiRef);
+
   return (
     showPicker && (
       <div ref={emojiRef} className="absolute bottom-0 left-5">

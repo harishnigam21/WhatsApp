@@ -1,3 +1,4 @@
+import { useUnFocus } from "@/hooks/useUnFocus";
 import { clearSelectedContact, setSelectedFor } from "@/redux/slices/ChatSlice";
 import { updateMainLayout } from "@/redux/slices/LayoutSlice";
 import { useAppDispatch } from "@/redux/Store";
@@ -13,7 +14,7 @@ import {
   SquareCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 export default function RightPartMenu({
   optionItem,
@@ -27,21 +28,7 @@ export default function RightPartMenu({
   const optionRef = useRef<HTMLOListElement>(null);
   const dispatch = useAppDispatch();
   const router = useRouter();
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as HTMLElement;
-      if (
-        optionRef.current &&
-        !optionRef.current.contains(event.target as Node) &&
-        target.id !== "rightellipsis" &&
-        !target.closest("#rightellipsis")
-      ) {
-        setOptions(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useUnFocus("rightellipsis", setOptions, optionRef);
   return (
     <ol
       ref={optionRef}

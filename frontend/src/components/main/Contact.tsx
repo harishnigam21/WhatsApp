@@ -8,6 +8,8 @@ import { MdGroupAdd, MdGroups, MdPersonAddAlt1 } from "react-icons/md";
 import ContactList from "./ContactList";
 import toast from "react-hot-toast";
 import { useContactSearch } from "@/hooks/useContactSearch";
+import { useRef } from "react";
+import { useUnFocus } from "@/hooks/useUnFocus";
 
 export default function Contact({
   showContact,
@@ -25,9 +27,12 @@ export default function Contact({
   const user = useAppSelector((store) => store.user.userInfo);
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const sectionRef = useRef<HTMLDivElement>(null);
+  useUnFocus("contactGoBack", setShowContact, sectionRef);
 
   return (
     <article
+      ref={sectionRef}
       className={`flex flex-col gap-2 absolute top-0 left-0 ${showContact ? "w-full opacity-100" : "w-0 opacity-0 p-0"} transition-all ease-in-out h-full z-20 bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)] duration-500 whitespace-nowrap overflow-x-hidden`}
     >
       <div className="flex flex-col gap-2 sticky top-0 p-3">
@@ -35,6 +40,7 @@ export default function Contact({
         <div className="flex flex-nowrap justify-between gap-2 items-center">
           <div className="flex flex-nowrap gap-3 items-center">
             <div
+              id="contactGoBack"
               className="p-2 hover:bg-bgsec active:bg-bgsec rounded-full cursor-pointer transition-all"
               onClick={() => setShowContact(false)}
             >

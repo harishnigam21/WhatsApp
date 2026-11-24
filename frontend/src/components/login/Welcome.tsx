@@ -1,6 +1,7 @@
 import { ChevronDown, EllipsisVertical, Globe } from "lucide-react";
 import AnimatedLogo from "./AnimatedLogo";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useUnFocus } from "@/hooks/useUnFocus";
 
 export default function Welcome({
   setAgree,
@@ -8,16 +9,9 @@ export default function Welcome({
   setAgree: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const [menu, setMenu] = useState<boolean>(false);
-  const menuRef = useRef<HTMLLIElement>(null);
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenu(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const menuRef = useRef<HTMLOListElement>(null);
+  useUnFocus("", setMenu, menuRef);
+
   return (
     <section className="relative text-txpri w-full grow grid grid-cols-1 md:grid-cols-2 p-2 md:p-4 lg:p-8">
       <div className="w-full flex items-center-safe justify-center-safe overflow-hidden">
@@ -56,14 +50,14 @@ export default function Welcome({
           <EllipsisVertical strokeWidth={3} size={30} />
         </button>
         {menu && (
-          <li
+          <ol
             ref={menuRef}
             className="fixed top-15 right-4 bg-bgsec rounded-2xl border border-borderhl list-none w-30 overflow-hidden"
           >
-            <ol className="px-3 py-1.5 cursor-pointer hover:bg-borderhl active:bg-borderhl transition-all">
+            <li className="px-3 py-1.5 cursor-pointer hover:bg-borderhl active:bg-borderhl transition-all">
               Help
-            </ol>
-          </li>
+            </li>
+          </ol>
         )}
       </div>
     </section>

@@ -1,3 +1,4 @@
+import { useUnFocus } from "@/hooks/useUnFocus";
 import { useAppSelector } from "@/redux/Store";
 import {
   Ban,
@@ -34,24 +35,8 @@ export default function ContactInfo({
   const containerRef = useRef<HTMLDivElement>(null);
   const picRef = useRef<HTMLImageElement>(null);
   const userInfo = useAppSelector((store) => store.chat.selectedContact);
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as HTMLElement;
-      if (picRef.current && !picRef.current.contains(event.target as Node)) {
-        setViewPic(false);
-      }
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node) &&
-        target.id !== "forContactInfo" &&
-        !target.closest("#forContactInfo")
-      ) {
-        setContactInfo(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useUnFocus("forContactInfo", setViewPic, picRef);
+  useUnFocus("forContactInfo", setContactInfo, containerRef);
   useEffect(() => {
     setTimeout(() => {
       setLoading(false);
