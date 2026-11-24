@@ -189,7 +189,7 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
             phone: userDoc.phone,
             phoneCode: userDoc.phoneCode,
             pic: userDoc.pic || null,
-            fullPhone:userDoc.fullPhone,
+            fullPhone: userDoc.fullPhone,
             banner: userDoc.banner || null,
             bio: userDoc.bio,
             lastSeen: userDoc.lastSeen,
@@ -370,15 +370,27 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
           attachments: messageDoc.attachments,
           createdAt: messageDoc.createdAt,
         };
-
+        const senderDetail = populateMessage.sender_id;
+        const receiverDetail = populateMessage.receiver_id;
+        const senderDetailRequires = {
+          _id: senderDetail?._id,
+          name: senderDetail?.name,
+          pic: senderDetail?.pic,
+          lastSeen: senderDetail?.lastSeen,
+          fullPhone: senderDetail?.fullPhone,
+        };
+        const receiverDetailRequires = {
+          _id: receiverDetail?._id,
+          name: receiverDetail?.name,
+          pic: receiverDetail?.pic,
+          lastSeen: receiverDetail?.lastSeen,
+          fullPhone: receiverDetail?.fullPhone,
+        };
         // Adapt these fields to the return shape of your DB service.
         ack(null, {
           success: true,
           messageData,
-          extraData: {
-            senderDetail: populateMessage.sender_id,
-            receiverDetail: populateMessage.receiver_id,
-          },
+          receiverDetail: receiverDetailRequires,
           parent: messageDoc._id.toString(),
         });
 
@@ -389,10 +401,7 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
           for (const socketId of receiverSocket) {
             io.to(socketId).emit("newAttachment", {
               messageData,
-              extraData: {
-                senderDetail: populateMessage.sender_id,
-                receiverDetail: populateMessage.receiver_id,
-              },
+              senderDetail: senderDetailRequires,
             });
           }
         }

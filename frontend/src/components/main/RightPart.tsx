@@ -99,7 +99,7 @@ export default function RightPart({
   const prevHeightRef = useRef<number>(0);
   const dispatch = useAppDispatch();
   const router = useRouter();
-  
+
   const handleSendMessage = async () => {
     const attachmentSize: number =
       Number(process.env.NEXT_PUBLIC_ATTACHMENT_SIZE) || 10485760;
@@ -138,19 +138,12 @@ export default function RightPart({
       success: boolean;
       message?: string;
       messageData?: MessageType;
-      extraData?: {
-        senderDetail: {
-          _id: string;
-          name: string;
-          pic: string;
-          lastSeen: Date;
-        };
-        receiverDetail: {
-          _id: string;
-          name: string;
-          pic: string;
-          lastSeen: Date;
-        };
+      receiverDetail: {
+        _id: string;
+        name: string;
+        pic: string;
+        lastSeen: Date;
+        fullPhone: string;
       };
       parent?: string;
     };
@@ -362,12 +355,12 @@ export default function RightPart({
         }
 
         // 5. Update Redux only after message creation succeeds.
-        if (messageResponse.messageData && messageResponse.extraData) {
+        if (messageResponse.messageData && messageResponse.receiverDetail) {
           changeParent(messageResponse?.parent || null);
           dispatch(
             addSenderMessage({
               data: messageResponse.messageData,
-              extra: messageResponse.extraData,
+              receiverDetail: messageResponse.receiverDetail,
             }),
           );
         }

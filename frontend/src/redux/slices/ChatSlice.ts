@@ -30,6 +30,7 @@ export interface Contact {
   name: string;
   pic: string;
   member: boolean;
+  fullPhone: string;
 }
 export interface ActiveContact {
   _id: string;
@@ -38,6 +39,7 @@ export interface ActiveContact {
   lastSeen: Date;
   lastMessage: MessageType;
   unread: number;
+  fullPhone: string;
 }
 export interface selectedContactType {
   _id: string;
@@ -138,24 +140,17 @@ const ChatSlice = createSlice({
       state,
       action: PayloadAction<{
         data: MessageType;
-        extra: {
-          senderDetail: {
-            _id: string;
-            name: string;
-            pic: string;
-            lastSeen: Date;
-          };
-          receiverDetail: {
-            _id: string;
-            name: string;
-            pic: string;
-            lastSeen: Date;
-          };
+        senderDetail: {
+          _id: string;
+          name: string;
+          pic: string;
+          lastSeen: Date;
+          fullPhone: string;
         };
       }>,
     ) => {
       const data = action.payload.data;
-      const extra = action.payload.extra;
+      const senderDetail = action.payload.senderDetail;
       if (data.sender_id === data.receiver_id) return;
       const findInActiveContact = state.activeContacts.findIndex(
         (item) => item._id == data.sender_id,
@@ -164,10 +159,11 @@ const ChatSlice = createSlice({
         state.activeContacts[findInActiveContact].lastMessage = data;
       } else {
         state.activeContacts.push({
-          _id: extra.senderDetail._id,
-          name: extra.senderDetail.name,
-          pic: extra.senderDetail.pic,
-          lastSeen: extra.senderDetail.lastSeen,
+          _id: senderDetail._id,
+          name: senderDetail.name,
+          pic: senderDetail.pic,
+          lastSeen: senderDetail.lastSeen,
+          fullPhone: senderDetail.fullPhone,
           lastMessage: data,
           unread: 0,
         });
@@ -181,7 +177,7 @@ const ChatSlice = createSlice({
         state.selectedContact.lastSeen = data.createdAt;
       } else {
         state.activeContacts = state.activeContacts.map((item) => {
-          if (item._id == extra.senderDetail._id) {
+          if (item._id == senderDetail._id) {
             return { ...item, unread: item.unread + 1 };
           } else {
             return item;
@@ -193,24 +189,17 @@ const ChatSlice = createSlice({
       state,
       action: PayloadAction<{
         data: MessageType;
-        extra: {
-          senderDetail: {
-            _id: string;
-            name: string;
-            pic: string;
-            lastSeen: Date;
-          };
-          receiverDetail: {
-            _id: string;
-            name: string;
-            pic: string;
-            lastSeen: Date;
-          };
+        receiverDetail: {
+          _id: string;
+          name: string;
+          pic: string;
+          lastSeen: Date;
+          fullPhone: string;
         };
       }>,
     ) => {
       const data = action.payload.data;
-      const extra = action.payload.extra;
+      const receiverDetail = action.payload.receiverDetail;
       const findInActiveContact = state.activeContacts.findIndex(
         (item) => item._id == data.receiver_id,
       );
@@ -218,10 +207,11 @@ const ChatSlice = createSlice({
         state.activeContacts[findInActiveContact].lastMessage = data;
       } else {
         state.activeContacts.push({
-          _id: extra.receiverDetail._id,
-          name: extra.receiverDetail.name,
-          pic: extra.receiverDetail.pic,
-          lastSeen: extra.receiverDetail.lastSeen,
+          _id: receiverDetail._id,
+          name: receiverDetail.name,
+          pic: receiverDetail.pic,
+          lastSeen: receiverDetail.lastSeen,
+          fullPhone: receiverDetail.fullPhone,
           lastMessage: data,
           unread: 0,
         });

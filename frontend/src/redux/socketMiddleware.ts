@@ -40,25 +40,18 @@ export const socketMiddleware: Middleware =
           "newMessage",
           (data: {
             messageData: MessageType;
-            extraData?: {
-              senderDetail: {
-                _id: string;
-                name: string;
-                pic: string;
-                lastSeen: Date;
-              };
-              receiverDetail: {
-                _id: string;
-                name: string;
-                pic: string;
-                lastSeen: Date;
-              };
+            senderDetail: {
+              _id: string;
+              name: string;
+              pic: string;
+              lastSeen: Date;
+              fullPhone: string;
             };
           }) => {
             store.dispatch(
               addReceiverMessage({
                 data: data.messageData!,
-                extra: data.extraData!,
+                senderDetail: data.senderDetail!,
               }),
             );
           },
@@ -67,25 +60,18 @@ export const socketMiddleware: Middleware =
           "newAttachment",
           (data: {
             messageData: MessageType;
-            extraData?: {
-              senderDetail: {
-                _id: string;
-                name: string;
-                pic: string;
-                lastSeen: Date;
-              };
-              receiverDetail: {
-                _id: string;
-                name: string;
-                pic: string;
-                lastSeen: Date;
-              };
+            senderDetail: {
+              _id: string;
+              name: string;
+              pic: string;
+              lastSeen: Date;
+              fullPhone: string;
             };
           }) => {
             store.dispatch(
               addReceiverMessage({
                 data: data.messageData!,
-                extra: data.extraData!,
+                senderDetail: data.senderDetail!,
               }),
             );
           },
@@ -151,19 +137,12 @@ export const socketMiddleware: Middleware =
           success: boolean;
           message?: string;
           messageData?: MessageType;
-          extraData?: {
-            senderDetail: {
-              _id: string;
-              name: string;
-              pic: string;
-              lastSeen: Date;
-            };
-            receiverDetail: {
-              _id: string;
-              name: string;
-              pic: string;
-              lastSeen: Date;
-            };
+          receiverDetail: {
+            _id: string;
+            name: string;
+            pic: string;
+            lastSeen: Date;
+            fullPhone: string;
           };
         };
         seenAll?: {
@@ -180,7 +159,7 @@ export const socketMiddleware: Middleware =
               store.dispatch(
                 addSenderMessage({
                   data: eventResponse.messageData!,
-                  extra: eventResponse.extraData!,
+                  receiverDetail: eventResponse.receiverDetail!,
                 }),
               );
             } else {

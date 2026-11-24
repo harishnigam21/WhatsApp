@@ -234,24 +234,34 @@ export function sendMessage(io: Server, socket: Socket) {
         seen: message.seen,
         createdAt: message.createdAt,
       };
+      const senderDetail = populatedUsers.sender_id;
+      const receiverDetail = populatedUsers.receiver_id;
+      const senderDetailRequires = {
+        _id: senderDetail?._id,
+        name: senderDetail?.name,
+        pic: senderDetail?.pic,
+        lastSeen: senderDetail?.lastSeen,
+        fullPhone: senderDetail?.fullPhone,
+      };
+      const receiverDetailRequires = {
+        _id: receiverDetail?._id,
+        name: receiverDetail?.name,
+        pic: receiverDetail?.pic,
+        lastSeen: receiverDetail?.lastSeen,
+        fullPhone: receiverDetail?.fullPhone,
+      };
       acknowledge?.({
         sendMessage: {
           success: true,
           messageData,
-          extraData: {
-            senderDetail: populatedUsers.sender_id,
-            receiverDetail: populatedUsers.receiver_id,
-          },
+          receiverDetail: receiverDetailRequires,
         },
       });
       if (receiverSocket) {
         for (const socketId of receiverSocket) {
           io.to(socketId).emit("newMessage", {
             messageData,
-            extraData: {
-              senderDetail: populatedUsers.sender_id,
-              receiverDetail: populatedUsers.receiver_id,
-            },
+            senderDetail: senderDetailRequires,
           });
         }
       }
