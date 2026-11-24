@@ -13,7 +13,7 @@ function escapeVCard(value: string) {
     .replace(/;/g, "\\;");
 }
 
-function createVCF(contacts: Contact[]) {
+export function createVCF(contacts: Contact[]) {
   const vcfContent = contacts
     .map((contact) => {
       return [

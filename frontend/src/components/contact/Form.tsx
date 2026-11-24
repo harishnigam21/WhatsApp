@@ -14,6 +14,7 @@ import {
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { formatBytes } from "@/utils/formatBytes";
+import { createVCF } from "@/utils/createVCF";
 
 export default function Form() {
   const { sendRequest, loading } = useApi();
@@ -74,13 +75,13 @@ export default function Form() {
     "application/octet-stream",
     "",
   ]);
-  const handleImport = () => {
+  const handleImport = (File: File) => {
     const formData = new FormData();
-    if (!vcfFile || !ALLOWED_MIME_TYPES.has(vcfFile.type.toLowerCase())) {
+    if (!File || !ALLOWED_MIME_TYPES.has(File.type.toLowerCase())) {
       toast.error("Invalid File Selected !");
       return;
     }
-    formData.append("vcf", vcfFile);
+    formData.append("vcf", File);
     sendRequest("api/contacts/import", "POST", formData)
       .then((result) => {
         if (result.success) {
@@ -101,8 +102,6 @@ export default function Form() {
       );
   };
 
-  ("use client");
-
   type ImportedContact = {
     name: string[];
     tel: string[];
@@ -111,8 +110,11 @@ export default function Form() {
 
   const syncContacts = async () => {
     // Check browser support
+    console.log("Browser:", navigator.userAgent);
+    console.log("Secure context:", window.isSecureContext);
+    console.log("API available:", "contacts" in navigator);
     if (!("contacts" in navigator)) {
-      toast.error("Contact Sync is not supported in this browser.");
+      toast.error("Contact Sync is not supported in this device.");
       return;
     }
 
@@ -134,8 +136,13 @@ export default function Form() {
           });
         }
       });
-      const vcfFile = createVCF(Array.from(formattedContacts));
-      console.log(vcfFile);
+      const vcfBlob = createVCF(Array.from(formattedContacts));
+      const vcfFile = new File([vcfBlob], "contacts.vcf", {
+        type: "text/vcard",
+        lastModified: Date.now(),
+      });
+      setVcfFile(vcfFile);
+      handleImport(vcfFile);
     } catch (error) {
       console.error("Contact Sync failed");
     }
@@ -167,13 +174,13 @@ export default function Form() {
           <div className="w-8/10 grow flex flex-col justify-around">
             <button
               onClick={syncContacts}
-              className="rounded-full py-2.5 px-4 w-full border border-borderhl cursor-pointer font-medium hover:bg-pri/40 transition-all duration-700 break-all line-clamp-1"
+              className="rounded-full py-2.5 px-4 w-full border border-borderhl cursor-pointer font-medium hover:bg-pri/40 active:bg-pri/40 transition-all duration-700 break-all line-clamp-1"
             >
-              Sync From This Device
+              This Device Contacts
             </button>
             <label
               htmlFor="uploadvcf"
-              className="rounded-full py-2.5 px-4 w-full border border-borderhl cursor-pointer font-medium hover:bg-pri/40 transition-all duration-700 mt-4 break-all line-clamp-1 flex justify-center"
+              className="rounded-full py-2.5 px-4 w-full border border-borderhl cursor-pointer font-medium hover:bg-pri/40 active:bg-pri/40 transition-all duration-700 mt-4 break-all line-clamp-1 flex justify-center"
             >
               Upload Contact File
             </label>
@@ -200,7 +207,7 @@ export default function Form() {
               accept=".vcf"
             />
             <small
-              className="self-start text-pri text-xs hover:text-pri/80 transition-all ml-2 font-medium cursor-pointer"
+              className="self-start text-pri text-xs hover:text-pri/80 active:text-pri/80 transition-all ml-2 font-medium cursor-pointer"
               onClick={() => {
                 setToggle((prev) => !prev);
               }}
@@ -232,7 +239,9 @@ export default function Form() {
           </div>
           <button
             disabled={!vcfFile || loading ? true : false}
-            onClick={handleImport}
+            onClick={() => {
+              if (vcfFile) handleImport(vcfFile);
+            }}
             className="bg-pri hover:bg-pri/80 active:bg-pri/80 transition-all rounded-full py-1 w-25 font-semibold flex items-center justify-center gap-1 cursor-cell mt-1 mb-3"
           >
             Import{" "}
@@ -274,7 +283,7 @@ export default function Form() {
               handleSubmit={handleSubmit}
             />
             <small
-              className="self-start text-pri text-xs hover:text-pri/80 transition-all ml-2 font-medium cursor-pointer"
+              className="self-start text-pri text-xs hover:text-pri/80 active:text-pri/80 transition-all ml-2 font-medium cursor-pointer"
               onClick={() => {
                 setToggle((prev) => !prev);
               }}
