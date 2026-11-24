@@ -14,8 +14,7 @@ async function handler(
     const accessToken = cookieStore.get("actk")?.value;
 
     const publicRoutes = ["auth"];
-    const isPublicRoute =
-      path[0] === "api" && publicRoutes.includes(path[1]);
+    const isPublicRoute = path[0] === "api" && publicRoutes.includes(path[1]);
     if (!accessToken && !isPublicRoute) {
       return Response.json({ message: "Unauthorized" }, { status: 401 });
     }
@@ -45,12 +44,19 @@ async function handler(
       cache: "no-store",
     });
 
+    const responseHeaders = new Headers();
+    const contentTypeRes = response.headers.get("Content-Type");
+    if (contentTypeRes) {
+      responseHeaders.set("Content-Type", contentTypeRes);
+    }
+    // Forward all cookies from backend
+    const cookiesRes = response.headers.getSetCookie();
+    cookiesRes.forEach((cookie) => {
+      responseHeaders.append("Set-Cookie", cookie);
+    });
     return new Response(response.body, {
       status: response.status,
-      headers: {
-        "Content-Type":
-          response.headers.get("Content-Type") ?? "application/json",
-      },
+      headers: responseHeaders,
     });
   } catch (error) {
     console.log(error);
