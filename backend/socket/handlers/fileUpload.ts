@@ -171,7 +171,8 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
         ) {
           return ackError(ack, "Uploaded asset metadata could not be verified");
         }
-
+        const RecStr = payload.receiver_id.toString();
+        const senStr = payload.sender_id.toString();
         const receiverSocket = userSocketIds.get(payload.receiver_id);
         type CachedUser = Omit<
           IUser,
@@ -251,8 +252,8 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
           } else {
             const parsed = JSON.parse(cachedParent);
             if (
-              parsed.sender_id.toString() !== payload.sender_id.toString() ||
-              parsed.receiver_id.toString() !== payload.receiver_id.toString()
+              parsed.sender_id.toString() !== senStr ||
+              parsed.receiver_id.toString() !== RecStr
             ) {
               return ackError(ack, "Unauthorized parent message access.");
             }
@@ -271,7 +272,7 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
           name: payload.name,
           created_at: payload.created_at,
           size: payload.size,
-          tags: payload.tags,
+          tags: asset.tags,
           message: payload.message,
         };
 
@@ -309,10 +310,7 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
           });
           messageDoc = created.toObject();
         }
-        const sortedParticipants = [
-          payload.sender_id.toString(),
-          payload.receiver_id.toString(),
-        ].sort();
+        const sortedParticipants = [senStr, RecStr].sort();
         const [, userMap] = await Promise.all([
           redisConnect.set(
             `OnGoingUploadMessage-${messageDoc._id}`,
@@ -334,32 +332,45 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
                 { upsert: true },
               )
             : Promise.resolve(),
-          Conversation.findOneAndUpdate(
-            { participants: sortedParticipants } as any,
-            {
-              $set: {
-                [`lastMessage.${payload.sender_id.toString()}`]: messageDoc._id,
-                [`lastMessage.${payload.receiver_id.toString()}`]:
-                  messageDoc._id,
-              },
-              $setOnInsert: {
-                participants: sortedParticipants,
-                [`unreadCounts.${payload.sender_id}`]: [],
-              },
-              ...(isNewMessage && {
-                $addToSet: {
-                  [`unreadCounts.${payload.receiver_id}`]: messageDoc._id,
+          senStr === RecStr
+            ? Conversation.findOneAndUpdate(
+                { participants: sortedParticipants } as any,
+                {
+                  $set: {
+                    [`lastMessage.${senStr}`]: messageDoc._id,
+                  },
+                  $setOnInsert: {
+                    participants: sortedParticipants,
+                    [`unreadCounts.${payload.sender_id}`]: [],
+                  },
                 },
-              }),
-            },
-            { upsert: true },
-          ),
+                { upsert: true },
+              )
+            : Conversation.findOneAndUpdate(
+                { participants: sortedParticipants } as any,
+                {
+                  $set: {
+                    [`lastMessage.${senStr}`]: messageDoc._id,
+                    [`lastMessage.${RecStr}`]: messageDoc._id,
+                  },
+                  $setOnInsert: {
+                    participants: sortedParticipants,
+                    [`unreadCounts.${payload.sender_id}`]: [],
+                  },
+                  ...(isNewMessage && {
+                    $addToSet: {
+                      [`unreadCounts.${payload.receiver_id}`]: messageDoc._id,
+                    },
+                  }),
+                },
+                { upsert: true },
+              ),
         ]);
 
         const populateMessage = {
           ...messageDoc,
-          sender_id: userMap.get(payload.sender_id.toString()),
-          receiver_id: userMap.get(payload.receiver_id.toString()),
+          sender_id: userMap.get(senStr),
+          receiver_id: userMap.get(RecStr),
         };
         const messageData = {
           _id: messageDoc._id,

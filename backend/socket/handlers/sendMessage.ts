@@ -23,98 +23,9 @@ export function sendMessage(io: Server, socket: Socket) {
           },
         });
       }
+      const RecStr = receiver_id.toString();
+      const senStr = sender_id.toString();
       const receiverSocket = userSocketIds.get(receiver_id);
-      // const message = await Message.create({
-      //   sender_id,
-      //   receiver_id,
-      //   content,
-      //   seen: receiverSocket ? "semiseen" : "unseen",
-      // });
-
-      // const getSenderData = await redisConnect.get(
-      //   `WhatsAppUserInfo-${sender_id}`,
-      // );
-      // const getReceiverData = await redisConnect.get(
-      //   `WhatsAppUserInfo-${receiver_id}`,
-      // );
-      // const toPopulate = [];
-      // type modifiedUserType = Omit<
-      //   IUser,
-      //   "refreshToken" | "fid" | "createdAt" | "updatedAt"
-      // > & {
-      //   _id: string;
-      // };
-      // let populateMessage: {
-      //   sender_id: modifiedUserType | null;
-      //   receiver_id: modifiedUserType | null;
-      // } = { sender_id: null, receiver_id: null };
-      // if (!getSenderData) {
-      //   toPopulate.push({ path: "sender_id" });
-      // } else {
-      //   populateMessage.sender_id = JSON.parse(getSenderData);
-      // }
-      // if (!getReceiverData) {
-      //   toPopulate.push({ path: "receiver_id" });
-      // } else {
-      //   populateMessage.sender_id = JSON.parse(getReceiverData);
-      // }
-      // const MergeDBCall = [];
-      // if (!receiverSocket) {
-      //   MergeDBCall.push(
-      //     NotDelivered.create({
-      //       sender_id,
-      //       receiver_id,
-      //       message_id: message._id,
-      //     }),
-      //   );
-      // }
-      // if (toPopulate.length > 0) {
-      //   MergeDBCall.push(message.populate(toPopulate));
-      // }
-      // if (MergeDBCall.length > 0) {
-      //   const [populateMessage] = await Promise.all(MergeDBCall);
-      //   if (populateMessage.sender_id) {
-      //     const eUser = {
-      //       _id: populateMessage.sender_id._id.toString(),
-      //       name: populateMessage.sender_id.name,
-      //       email: populateMessage.sender_id.email,
-      //       phone: populateMessage.sender_id.phone,
-      //       phoneCode: populateMessage.sender_id.phoneCode,
-      //       pic: populateMessage.sender_id?.pic || null,
-      //       banner: populateMessage.sender_id?.banner || null,
-      //       bio: populateMessage.sender_id.bio,
-      //       lastSeen: populateMessage.sender_id.lastSeen,
-      //     };
-      //     await redisConnect.set(
-      //       `WhatsAppUserInfo-${eUser._id}`,
-      //       JSON.stringify(eUser),
-      //       "EX",
-      //       7 * 24 * 60 * 60,
-      //     );
-      //     populateMessage.sender_id = eUser;
-      //   }
-      //   if (populateMessage.receiver_id) {
-      //     const eUser = {
-      //       _id: populateMessage.receiver_id._id.toString(),
-      //       name: populateMessage.receiver_id.name,
-      //       email: populateMessage.receiver_id.email,
-      //       phone: populateMessage.receiver_id.phone,
-      //       phoneCode: populateMessage.receiver_id.phoneCode,
-      //       pic: populateMessage.receiver_id?.pic || null,
-      //       banner: populateMessage.receiver_id?.banner || null,
-      //       bio: populateMessage.receiver_id.bio,
-      //       lastSeen: populateMessage.receiver_id.lastSeen,
-      //     };
-      //     await redisConnect.set(
-      //       `WhatsAppUserInfo-${eUser._id}`,
-      //       JSON.stringify(eUser),
-      //       "EX",
-      //       7 * 24 * 60 * 60,
-      //     );
-      //     populateMessage.sender_id = eUser;
-      //   }
-      // }
-
       type CachedUser = Omit<
         IUser,
         "refreshToken" | "fid" | "createdAt" | "updatedAt"
@@ -167,30 +78,41 @@ export function sendMessage(io: Server, socket: Socket) {
       const toPopulate: { path: "sender_id" | "receiver_id" }[] = [];
       if (!populatedUsers.sender_id) toPopulate.push({ path: "sender_id" });
       if (!populatedUsers.receiver_id) toPopulate.push({ path: "receiver_id" });
-      const sortedParticipants = [
-        sender_id.toString(),
-        receiver_id.toString(),
-      ].sort();
+      const sortedParticipants = [senStr, RecStr].sort();
       await Promise.all([
-        Conversation.findOneAndUpdate(
-          { participants: sortedParticipants },
-          {
-            $set: {
-              [`lastMessage.${sender_id.toString()}`]: message._id,
-              [`lastMessage.${receiver_id.toString()}`]: message._id,
-            },
-            $setOnInsert: {
-              participants: sortedParticipants,
-              [`unreadCounts.${sender_id}`]: [],
-            },
-            ...(message.seen !== "seen" && {
-              $addToSet: {
-                [`unreadCounts.${receiver_id}`]: message._id,
+        senStr === RecStr
+          ? Conversation.findOneAndUpdate(
+              { participants: sortedParticipants },
+              {
+                $set: {
+                  [`lastMessage.${senStr}`]: message._id,
+                },
+                $setOnInsert: {
+                  participants: sortedParticipants,
+                  [`unreadCounts.${sender_id}`]: [],
+                },
               },
-            }),
-          },
-          { upsert: true, returnDocument: "after" },
-        ),
+              { upsert: true, returnDocument: "after" },
+            )
+          : Conversation.findOneAndUpdate(
+              { participants: sortedParticipants },
+              {
+                $set: {
+                  [`lastMessage.${senStr}`]: message._id,
+                  [`lastMessage.${RecStr}`]: message._id,
+                },
+                $setOnInsert: {
+                  participants: sortedParticipants,
+                  [`unreadCounts.${sender_id}`]: [],
+                },
+                ...(message.seen !== "seen" && {
+                  $addToSet: {
+                    [`unreadCounts.${receiver_id}`]: message._id,
+                  },
+                }),
+              },
+              { upsert: true, returnDocument: "after" },
+            ),
         !receiverSocket
           ? NotDelivered.create({
               sender_id,
