@@ -3,10 +3,11 @@ import { AuthRequest } from "../types/AuthRequest";
 import Message from "../models/Message";
 import User from "../models/User";
 import { getServerError } from "../utils/serverError";
-import { userSocketIds } from "../server";
+import { io, userSocketIds } from "../server";
 import mongoose from "mongoose";
 import redisConnect from "../config/redis_connect";
 import Contacts from "../models/Contacts";
+import Conversation from "../models/Conversation";
 
 export const getChat = async (req: AuthRequest, res: Response) => {
   try {
@@ -40,6 +41,42 @@ export const getChat = async (req: AuthRequest, res: Response) => {
 
     const currentUserId = new mongoose.Types.ObjectId(req.user?._id);
     const targetId = new mongoose.Types.ObjectId(user._id);
+    if (!cursor) {
+      const sender = currentUserId.toString();
+      const receiver = targetId.toString();
+      const sortedParticipants: any[] = [sender, receiver].sort();
+
+      await Conversation.findOneAndUpdate(
+        { participants: sortedParticipants },
+        {
+          $setOnInsert: {
+            participants: sortedParticipants,
+          },
+        },
+        { upsert: true, returnDocument: "after" },
+      ).lean();
+
+      const receiverSocket = userSocketIds.get(receiver);
+      if (receiverSocket) {
+        const sender = req.user!;
+        const isInContact = await Contacts.findOne({
+          userId: targetId,
+          fullPhone: req.user!.fullPhone,
+        });
+        for (const socketId of receiverSocket) {
+          io.to(socketId).emit("newConversation", {
+            user: {
+              _id: sender._id,
+              name: isInContact ? isInContact.name : sender.fullPhone,
+              pic: isInContact ? sender.pic : null,
+              lastSeen: sender.lastSeen,
+              unread: 0,
+              fullPhone: sender.fullPhone,
+            },
+          });
+        }
+      }
+    }
     const isInContact = await Contacts.findOne({
       userId: currentUserId,
       fullPhone: user.fullPhone,
@@ -117,7 +154,7 @@ export const getChat = async (req: AuthRequest, res: Response) => {
           _id: user._id,
           name: isInContact ? isInContact.name : user.fullPhone,
           pic: isInContact ? user.pic : null,
-          banner:isInContact ? user.banner : null,
+          banner: isInContact ? user.banner : null,
           phone: user.phone,
           phoneCode: user.phoneCode,
           bio: user.bio,
