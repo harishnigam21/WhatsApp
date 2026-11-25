@@ -25,7 +25,6 @@ import {
   Forward,
   Download,
   LoaderCircle,
-  ChevronUp,
   ChevronsUp,
 } from "lucide-react";
 import Image from "next/image";
@@ -356,12 +355,11 @@ export default function RightPart({
         }
 
         // 5. Update Redux only after message creation succeeds.
-        if (messageResponse.messageData && messageResponse.receiverDetail) {
+        if (messageResponse.messageData) {
           changeParent(messageResponse?.parent || null);
           dispatch(
             addSenderMessage({
               data: messageResponse.messageData,
-              receiverDetail: messageResponse.receiverDetail,
             }),
           );
         }

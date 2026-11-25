@@ -174,67 +174,7 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
         const RecStr = payload.receiver_id.toString();
         const senStr = payload.sender_id.toString();
         const receiverSocket = userSocketIds.get(payload.receiver_id);
-        type CachedUser = Omit<
-          IUser,
-          "refreshToken" | "fid" | "createdAt" | "updatedAt"
-        > & {
-          _id: string;
-        };
-        const formatAndCacheUser = async (
-          userDoc: any,
-        ): Promise<CachedUser> => {
-          const formatted: CachedUser = {
-            _id: userDoc._id.toString(),
-            name: userDoc.name,
-            email: userDoc.email,
-            phone: userDoc.phone,
-            phoneCode: userDoc.phoneCode,
-            pic: userDoc.pic || null,
-            fullPhone: userDoc.fullPhone,
-            banner: userDoc.banner || null,
-            bio: userDoc.bio,
-            lastSeen: userDoc.lastSeen,
-          };
-
-          await redisConnect.set(
-            `WhatsAppUserInfo-${formatted._id}`,
-            JSON.stringify(formatted),
-            "EX",
-            7 * 24 * 60 * 60,
-          );
-
-          return formatted;
-        };
-        const getUsersFromCacheOrDB = async (userIds: string[]) => {
-          const uniqueIds = [...new Set(userIds.map((id) => id.toString()))];
-          const keys = uniqueIds.map((id) => `WhatsAppUserInfo-${id}`);
-          const cachedList = await redisConnect.mget(keys);
-
-          const userMap = new Map<string, CachedUser>();
-          const missingIds: string[] = [];
-
-          uniqueIds.forEach((id, idx) => {
-            if (cachedList[idx]) {
-              userMap.set(id, JSON.parse(cachedList[idx]!));
-            } else {
-              missingIds.push(id);
-            }
-          });
-
-          if (missingIds.length > 0) {
-            const dbUsers = await User.find({
-              _id: { $in: missingIds },
-            }).lean();
-            await Promise.all(
-              dbUsers.map(async (u) => {
-                const cached = await formatAndCacheUser(u);
-                userMap.set(cached._id, cached);
-              }),
-            );
-          }
-
-          return userMap;
-        };
+       
         if (payload.parent) {
           const cachedParent = await redisConnect.get(
             `OnGoingUploadMessage-${payload.parent}`,
@@ -311,14 +251,7 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
           messageDoc = created.toObject();
         }
         const sortedParticipants = [senStr, RecStr].sort();
-        const [, userMap] = await Promise.all([
-          redisConnect.set(
-            `OnGoingUploadMessage-${messageDoc._id}`,
-            JSON.stringify(messageDoc),
-            "EX",
-            60 * 60,
-          ),
-          getUsersFromCacheOrDB([payload.sender_id, payload.receiver_id]),
+        await Promise.all([
           !receiverSocket && isNewMessage
             ? NotDelivered.updateOne(
                 { message_id: messageDoc._id },
@@ -367,11 +300,6 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
               ),
         ]);
 
-        const populateMessage = {
-          ...messageDoc,
-          sender_id: userMap.get(senStr),
-          receiver_id: userMap.get(RecStr),
-        };
         const messageData = {
           _id: messageDoc._id,
           sender_id: messageDoc.sender_id.toString(),
@@ -381,27 +309,11 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
           attachments: messageDoc.attachments,
           createdAt: messageDoc.createdAt,
         };
-        const senderDetail = populateMessage.sender_id;
-        const receiverDetail = populateMessage.receiver_id;
-        const senderDetailRequires = {
-          _id: senderDetail?._id,
-          name: senderDetail?.name,
-          pic: senderDetail?.pic,
-          lastSeen: senderDetail?.lastSeen,
-          fullPhone: senderDetail?.fullPhone,
-        };
-        const receiverDetailRequires = {
-          _id: receiverDetail?._id,
-          name: receiverDetail?.name,
-          pic: receiverDetail?.pic,
-          lastSeen: receiverDetail?.lastSeen,
-          fullPhone: receiverDetail?.fullPhone,
-        };
+
         // Adapt these fields to the return shape of your DB service.
         ack(null, {
           success: true,
           messageData,
-          receiverDetail: receiverDetailRequires,
           parent: messageDoc._id.toString(),
         });
 
@@ -412,7 +324,6 @@ export function registerFileUploadHandlers(io: Server, socket: Socket) {
           for (const socketId of receiverSocket) {
             io.to(socketId).emit("newAttachment", {
               messageData,
-              senderDetail: senderDetailRequires,
             });
           }
         }

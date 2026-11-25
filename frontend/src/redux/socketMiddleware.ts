@@ -51,7 +51,6 @@ export const socketMiddleware: Middleware =
             store.dispatch(
               addReceiverMessage({
                 data: data.messageData!,
-                senderDetail: data.senderDetail!,
               }),
             );
           },
@@ -71,7 +70,6 @@ export const socketMiddleware: Middleware =
             store.dispatch(
               addReceiverMessage({
                 data: data.messageData!,
-                senderDetail: data.senderDetail!,
               }),
             );
           },
@@ -159,7 +157,6 @@ export const socketMiddleware: Middleware =
               store.dispatch(
                 addSenderMessage({
                   data: eventResponse.messageData!,
-                  receiverDetail: eventResponse.receiverDetail!,
                 }),
               );
             } else {

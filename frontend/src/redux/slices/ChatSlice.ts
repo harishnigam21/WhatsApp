@@ -140,33 +140,15 @@ const ChatSlice = createSlice({
       state,
       action: PayloadAction<{
         data: MessageType;
-        senderDetail: {
-          _id: string;
-          name: string;
-          pic: string;
-          lastSeen: Date;
-          fullPhone: string;
-        };
       }>,
     ) => {
       const data = action.payload.data;
-      const senderDetail = action.payload.senderDetail;
       if (data.sender_id === data.receiver_id) return;
       const findInActiveContact = state.activeContacts.findIndex(
         (item) => item._id == data.sender_id,
       );
       if (findInActiveContact !== -1) {
         state.activeContacts[findInActiveContact].lastMessage = data;
-      } else {
-        state.activeContacts.push({
-          _id: senderDetail._id,
-          name: senderDetail.name,
-          pic: senderDetail.pic,
-          lastSeen: senderDetail.lastSeen,
-          fullPhone: senderDetail.fullPhone,
-          lastMessage: data,
-          unread: 0,
-        });
       }
       if (state.selectedContact?._id == data.sender_id) {
         state.selectedContact.messages = state.selectedContact.messages.filter(
@@ -177,7 +159,7 @@ const ChatSlice = createSlice({
         state.selectedContact.lastSeen = data.createdAt;
       } else {
         state.activeContacts = state.activeContacts.map((item) => {
-          if (item._id == senderDetail._id) {
+          if (item._id == data.sender_id) {
             return { ...item, unread: item.unread + 1 };
           } else {
             return item;
@@ -189,32 +171,14 @@ const ChatSlice = createSlice({
       state,
       action: PayloadAction<{
         data: MessageType;
-        receiverDetail: {
-          _id: string;
-          name: string;
-          pic: string;
-          lastSeen: Date;
-          fullPhone: string;
-        };
       }>,
     ) => {
       const data = action.payload.data;
-      const receiverDetail = action.payload.receiverDetail;
       const findInActiveContact = state.activeContacts.findIndex(
         (item) => item._id == data.receiver_id,
       );
       if (findInActiveContact !== -1) {
         state.activeContacts[findInActiveContact].lastMessage = data;
-      } else {
-        state.activeContacts.push({
-          _id: receiverDetail._id,
-          name: receiverDetail.name,
-          pic: receiverDetail.pic,
-          lastSeen: receiverDetail.lastSeen,
-          fullPhone: receiverDetail.fullPhone,
-          lastMessage: data,
-          unread: 0,
-        });
       }
       if (state.selectedContact?._id == data.receiver_id) {
         state.selectedContact.messages = state.selectedContact.messages.filter(
