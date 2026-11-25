@@ -1,7 +1,9 @@
-import { Contact } from "@/redux/slices/ChatSlice";
 import { useEffect, useMemo, useState } from "react";
 
-export function useContactSearch(contacts: Contact[], delay = 400) {
+export function useContactSearch<T extends { name: string; fullPhone: string }>(
+  contacts: T[],
+  delay = 400,
+) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 

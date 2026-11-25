@@ -11,6 +11,8 @@ import { BiSolidCommentAdd } from "react-icons/bi";
 import LeftPartMenu from "./LeftPartMenu";
 import { useState } from "react";
 import { useAppSelector } from "@/redux/Store";
+import { useContactSearch } from "@/hooks/useContactSearch";
+import { ActiveContact as AContact } from "@/redux/slices/ChatSlice";
 
 export default function ActiveContact({
   options,
@@ -37,8 +39,10 @@ export default function ActiveContact({
 }) {
   const [filterSelected, setFiterSelected] = useState<string>("all");
   const { activeContacts } = useAppSelector((store) => store.chat);
+  const { search, setSearch, filteredContacts } =
+    useContactSearch<AContact>(activeContacts);
   const user = useAppSelector((store) => store.user.userInfo);
-
+  console.log(filteredContacts);
   return (
     <article className="flex flex-col absolute top-0 left-0 w-full h-full z-10 bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)]">
       {/* heading */}
@@ -89,9 +93,10 @@ export default function ActiveContact({
         >
           <Search strokeWidth={1} size={16} />
           <input
-            type="searchContact"
-            name="searchContact"
-            id="searchContact"
+            value={search}
+            type="search"
+            name="searchActiveContact"
+            id="searchActiveContact"
             placeholder="Search or start a new chat"
             className="w-full py-1.5 text-sm outline-none focus:outline-none place-content-center"
             onFocus={() => {
@@ -100,6 +105,7 @@ export default function ActiveContact({
             onBlur={() => {
               setSearcFocus(false);
             }}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         {/* filter button`` */}
@@ -136,8 +142,8 @@ export default function ActiveContact({
             <p>Archived</p>
           </div>
         </div>
-        {activeContacts.length > 0 ? (
-          activeContacts.map((item, i) => (
+        {filteredContacts.length > 0 ? (
+          filteredContacts.map((item, i) => (
             <ActiveContactList
               key={`leftbar/contact/listed/${i}`}
               item={item}

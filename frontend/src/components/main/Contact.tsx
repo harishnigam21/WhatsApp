@@ -1,4 +1,7 @@
-import { setSelectedContactLoading } from "@/redux/slices/ChatSlice";
+import {
+  Contact as Ctype,
+  setSelectedContactLoading,
+} from "@/redux/slices/ChatSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
 import { ArrowLeft, Search } from "lucide-react";
 import Image from "next/image";
@@ -23,7 +26,8 @@ export default function Contact({
   setSearcFocus: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const { Contacts } = useAppSelector((store) => store.chat);
-  const { search, setSearch, filteredContacts } = useContactSearch(Contacts);
+  const { search, setSearch, filteredContacts } =
+    useContactSearch<Ctype>(Contacts);
   const user = useAppSelector((store) => store.user.userInfo);
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -57,9 +61,9 @@ export default function Contact({
           <Search strokeWidth={1} size={16} />
           <input
             value={search}
-            type="searchPeople"
-            name="searchPeople"
-            id="searchPeople"
+            type="search"
+            name="searchContacts"
+            id="searchContacts"
             placeholder="Search name, number"
             className="w-full py-1.5 text-sm outline-none focus:outline-none place-content-center"
             onFocus={() => {
