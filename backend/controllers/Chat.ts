@@ -6,6 +6,7 @@ import { getServerError } from "../utils/serverError";
 import { userSocketIds } from "../server";
 import mongoose from "mongoose";
 import redisConnect from "../config/redis_connect";
+import Contacts from "../models/Contacts";
 
 export const getChat = async (req: AuthRequest, res: Response) => {
   try {
@@ -36,8 +37,13 @@ export const getChat = async (req: AuthRequest, res: Response) => {
         .status(404)
         .json({ message: "No such user found", invite: true });
     }
+
     const currentUserId = new mongoose.Types.ObjectId(req.user?._id);
     const targetId = new mongoose.Types.ObjectId(user._id);
+    const isInContact = await Contacts.findOne({
+      userId: currentUserId,
+      fullPhone: user.fullPhone,
+    });
     const messages = await Message.aggregate([
       {
         $match: {
@@ -109,9 +115,9 @@ export const getChat = async (req: AuthRequest, res: Response) => {
       ? { messages, next: nextCursor }
       : {
           _id: user._id,
-          name: user.name,
-          pic: user.pic,
-          banner: user.banner,
+          name: isInContact ? isInContact.name : user.fullPhone,
+          pic: isInContact ? user.pic : null,
+          banner:isInContact ? user.banner : null,
           phone: user.phone,
           phoneCode: user.phoneCode,
           bio: user.bio,
