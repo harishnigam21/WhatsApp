@@ -8,6 +8,7 @@ export type AuthUser = {
   pic: string | null;
   banner: string | null;
   bio: string;
+  fullPhone: string;
   lastSeen: Date;
 };
 export interface AuthRequest<

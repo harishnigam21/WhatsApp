@@ -45,6 +45,7 @@ const jwtVerifier = async (
         pic: UserExist?.pic || null,
         banner: UserExist?.banner || null,
         bio: UserExist.bio,
+        fullPhone: UserExist.fullPhone,
         lastSeen: UserExist.lastSeen,
       };
       await redisConnect.set(
