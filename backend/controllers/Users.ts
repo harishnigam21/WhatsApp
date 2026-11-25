@@ -214,74 +214,204 @@ export const getContacts = async (req: AuthRequest, res: Response) => {
 };
 
 export const getActiveContacts = async (req: AuthRequest, res: Response) => {
+  type ContactType = {
+    _id: string;
+    name: string;
+    pic: string | null;
+    fullPhone: string;
+    lastSeen?: Date;
+  };
+
+  type PopulatedUser = {
+    _id: mongoose.Types.ObjectId;
+    name: string;
+    pic: string | null;
+    fullPhone: string;
+    lastSeen?: Date;
+  };
+
+  type ConversationData = {
+    participants: (PopulatedUser | null)[];
+    lastMessage: Map<string, IMessage> | Record<string, IMessage> | null;
+    unreadCounts:
+      | Map<string, mongoose.Types.ObjectId[]>
+      | Record<string, mongoose.Types.ObjectId[]>;
+    updatedAt: Date;
+  };
+
+  // Supports both Map and plain objects.
+  const getMapValue = <T>(
+    value: Map<string, T> | Record<string, T> | null | undefined,
+    key: string,
+  ): T | undefined => {
+    if (!value) return undefined;
+
+    return value instanceof Map ? value.get(key) : value[key];
+  };
+
+  // Get the appropriate last message for the current user.
+  const getLastMessage = (
+    lastMessages: ConversationData["lastMessage"],
+    userId: mongoose.Types.ObjectId,
+    updatedAt: Date,
+  ) => {
+    const message = getMapValue(lastMessages, userId.toString());
+
+    const emptyMessage = {
+      _id: `start chatting - ${userId}`,
+      sender_id: "start chatting",
+      receiver_id: "start chatting",
+      content: "start chatting...",
+      seen: "start chatting",
+      attachments: [],
+      deletedFor: true,
+      createdAt: updatedAt,
+    };
+
+    if (!message || message.deletedForEveryone) {
+      return emptyMessage;
+    }
+
+    const isInTrash = message.inTrash?.some((id) => id.equals(userId)) ?? false;
+
+    if (isInTrash) {
+      return emptyMessage;
+    }
+
+    const isDeletedFor =
+      message.deletedFor?.some((id) => id.equals(userId)) ?? false;
+
+    const { inTrash, deletedForEveryone, deletedFor, ...other } = message;
+
+    if (isDeletedFor) {
+      return {
+        ...other,
+        content: "This message was deleted",
+        attachments: [],
+        deletedFor: true,
+      };
+    }
+
+    return {
+      ...other,
+      deletedFor: false,
+    };
+  };
   try {
     const userReq = req.user!;
-    const userId = new mongoose.Types.ObjectId(req.user!._id);
-    const list = await Conversation.find({ participants: userId })
+    const userId = new mongoose.Types.ObjectId(userReq._id);
+    const userIdString = userId.toString();
+
+    // Fetch conversations.
+    const conversations = (await Conversation.find({
+      participants: userId,
+    })
+      .select("participants lastMessage unreadCounts updatedAt")
       .populate({
         path: "participants",
         match: { _id: { $ne: userId } },
         select: "_id name pic fullPhone lastSeen",
       })
-      .populate(
-        "lastMessage",
-        "_id sender_id receiver_id content seen attachments deletedForEveryone deletedFor inTrash createdAt",
-      )
+      .populate({
+        path: "lastMessage",
+        select:
+          "_id sender_id receiver_id content seen attachments inTrash deletedForEveryone deletedFor createdAt",
+      })
       .sort({ updatedAt: -1 })
-      .lean();
-    const contactList = list.map((item) => {
-      const lastMessage = item.lastMessage as unknown as Map<string, IMessage>;
-      let updatedLastMessage = null;
-      try {
-        const particularUserLM = lastMessage.get(userId.toString());
-        if (!particularUserLM) {
-          throw new Error("no last message found");
-        }
-        const { inTrash, deletedForEveryone, deletedFor, ...other } =
-          particularUserLM;
-        const isInTrash = inTrash?.some((id) => id.equals(userId)) ?? false;
+      .lean()) as unknown as ConversationData[];
 
-        if (particularUserLM && !deletedForEveryone && !isInTrash) {
-          const isdeletedFor =
-            deletedFor?.some((id) => id.equals(userId)) ?? false;
-          if (isdeletedFor) {
-            updatedLastMessage = {
-              ...other,
-              content: "This message was deleted",
-              attachments: [],
-              deletedFor: true,
-            };
-          } else {
-            updatedLastMessage = { ...other, deletedFor: false };
-          }
-        } else {
-          throw new Error("start new messaging");
-        }
-      } catch (error) {
-        updatedLastMessage = {
-          _id: `start chatting - ${userId}`,
-          sender_id: "start chatting",
-          receiver_id: "start chatting",
-          content: "start chatting...",
-          seen: "start chatting",
-          attachments: [],
-          deletedFor: true,
-          createdAt: new Date(),
+    if (!conversations.length) {
+      return res.status(200).json([]);
+    }
+
+    // Extract unique external contacts.
+    const uniqueContacts = new Map<string, PopulatedUser>();
+
+    for (const conversation of conversations) {
+      const contact = conversation.participants[0];
+
+      if (contact && !uniqueContacts.has(contact.fullPhone)) {
+        uniqueContacts.set(contact.fullPhone, contact);
+      }
+    }
+
+    // Fetch saved contacts.
+    const savedContacts = await Contacts.find({
+      fullPhone: { $in: [...uniqueContacts.keys()] },
+      // Add your actual owner field here if Contacts are user-specific.
+      // userId,
+    })
+      .select("name pic fullPhone")
+      .lean();
+
+    const savedContactsMap = new Map(
+      savedContacts.map((contact) => [contact.fullPhone, contact]),
+    );
+
+    // Build final contact list.
+    const result = new Map<string, object>();
+
+    for (const conversation of conversations) {
+      const populatedContact = conversation.participants[0];
+
+      // Handle self-conversations.
+      const isSelfConversation = !populatedContact;
+      let contact: ContactType;
+
+      if (isSelfConversation) {
+        contact = {
+          _id: userIdString,
+          fullPhone: `${userReq.phoneCode + userReq.phone}`,
+          lastSeen: userReq.lastSeen,
+          name: `${userReq.phoneCode} ${userReq.phone} (You)`,
+          pic: userReq.pic,
+        };
+      } else {
+        const savedContact = savedContactsMap.get(populatedContact.fullPhone);
+        contact = {
+          _id: populatedContact._id.toString(),
+          fullPhone: populatedContact.fullPhone,
+          lastSeen: populatedContact.lastSeen,
+          name: savedContact
+            ? savedContact.name || populatedContact.fullPhone
+            : populatedContact.fullPhone,
+          pic: savedContact ? populatedContact.pic || null : null,
         };
       }
+      // Prevent duplicate contacts.
+      if (result.has(contact._id)) continue;
 
-      const user = item?.participants?.[0] || {
-        fullPhone: `${userReq.phoneCode + userReq.phone}`,
-        lastSeen: userReq.lastSeen,
-        name: `${userReq.phoneCode} ${userReq.phone} (You)`,
-        pic: userReq.pic,
-        unread: 0,
-      };
-      const unread = item.unreadCounts[userId.toString()].length;
-      return { ...user, unread, lastMessage: updatedLastMessage };
-    });
-    return res.status(200).json(contactList);
+      // Saved contact name applies only to external contacts.
+      if (!isSelfConversation) {
+        const savedContact = savedContactsMap.get(contact.fullPhone);
+
+        if (savedContact) {
+          contact.name = savedContact.name || contact.fullPhone;
+          contact.pic = populatedContact!.pic || null;
+        }
+      }
+
+      // Get unread message count.
+      const unreadCounts = getMapValue(conversation.unreadCounts, userIdString);
+
+      const unread = unreadCounts?.length ?? 0;
+
+      // Get last message.
+      const lastMessage = getLastMessage(
+        conversation.lastMessage,
+        userId,
+        conversation.updatedAt,
+      );
+
+      result.set(contact._id, {
+        ...contact,
+        unread,
+        lastMessage,
+      });
+    }
+
+    return res.status(200).json([...result.values()]);
   } catch (error) {
-    getServerError(res, error, "getActiveContacts Controller");
+    return getServerError(res, error, "getActiveContacts Controller");
   }
 };

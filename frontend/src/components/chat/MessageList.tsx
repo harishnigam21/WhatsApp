@@ -172,7 +172,7 @@ const MessageBody = ({
         e.preventDefault();
         setOptions(true);
       }}
-      className={`w-full flex flex-nowrap gap-2 py-0.5 ${item.sender_id === userID && "justify-end"} ${selected && selectedFor && "bg-bgsec/70"} ${selectedFor && "hover:bg-bgsec/70 active:bg-bgsec/70 cursor-pointer"} px-4 sm:px-8 lg:px-16 ${deleteLoading && selectionFor.includes(item._id) && "animate-pulse"}`}
+      className={`w-full flex flex-nowrap gap-2 py-0.5 ${item.sender_id === userID && "justify-end"} ${selected && selectedFor && "bg-bgsec/70"} ${selectedFor && "hover:bg-bgsec/70 active:bg-bgsec/70 cursor-pointer"} px-4 sm:px-8 lg:px-16 ${deleteLoading && selectionFor.includes(item._id) && "animate-pulse [animation-duration:0.5s]"}`}
       onClick={() => {
         if (selectedFor) dispatch(setSelectionFor(item._id));
       }}
