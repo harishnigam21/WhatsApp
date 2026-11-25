@@ -58,6 +58,7 @@ import ContactInfo from "./ContactInfo";
 import { NextMessages } from "@/services/NextMessages";
 import { FullLoading } from "@/app/(main)/[cid]/loading";
 import InviteContact from "../contact/InviteContact";
+import { validatePhoneNumber } from "@/utils/firebase";
 
 export default function RightPart({
   children,
@@ -568,7 +569,9 @@ export default function RightPart({
               />
             ) : (
               <small className="size-full p-1 flex items-center justify-center uppercase font-bold">
-                {selectedContact?.name.slice(0, 2)}
+                {validatePhoneNumber(selectedContact.name)
+                  ? selectedContact.name.slice(-2)
+                  : selectedContact.name.slice(0, 2)}
               </small>
             )}
           </div>
