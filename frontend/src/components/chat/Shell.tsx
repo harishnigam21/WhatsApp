@@ -1,5 +1,6 @@
 "use client";
 import {
+  addActiveContact,
   clearSelectedContact,
   clearSelectionFor,
   selectedContactType,
@@ -38,6 +39,27 @@ export default function Shell({
       dispatch(clearSelectedContact());
       router.push("/");
     } else {
+      dispatch(
+        addActiveContact({
+          _id: dataChat._id,
+          name: dataChat.name,
+          pic: dataChat?.pic || "",
+          lastSeen: dataChat.lastSeen,
+          lastMessage: {
+            _id: `start chatting - ${dataChat._id}`,
+            sender_id: "start chatting",
+            receiver_id: "start chatting",
+            content: "start chatting...",
+            seen: "unseen",
+            starred: false,
+            attachments: [],
+            deletedFor: true,
+            createdAt: "invalid" as unknown as Date,
+          },
+          unread: 0,
+          fullPhone: `${dataChat.phoneCode + dataChat.phone}`,
+        }),
+      );
       dispatch(setSelectedContact(dataChat));
       dispatch(setSelectedContactLoading(false));
       dispatch(setSelectedFor(false));

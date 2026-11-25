@@ -2,6 +2,8 @@ import { Middleware } from "@reduxjs/toolkit";
 import { io, Socket } from "socket.io-client";
 import { setConnectionStatus } from "./slices/SocketSlice";
 import {
+  ActiveContact,
+  addActiveContact,
   addReceiverMessage,
   addSenderMessage,
   clearUnread,
@@ -93,6 +95,32 @@ export const socketMiddleware: Middleware =
             deletedBy: string;
           };
           store.dispatch(deleteMsgR({ ids, deletedBy }));
+        });
+        socket.on("newConversation", (data) => {
+          const { user } = data as {
+            user: ActiveContact;
+          };
+          store.dispatch(
+            addActiveContact({
+              _id: user._id,
+              name: user.name,
+              pic: user?.pic || "",
+              lastSeen: user.lastSeen,
+              lastMessage: {
+                _id: `start chatting - ${user._id}`,
+                sender_id: "start chatting",
+                receiver_id: "start chatting",
+                content: "start chatting...",
+                seen: "unseen",
+                starred: false,
+                attachments: [],
+                deletedFor: true,
+                createdAt: "invalid" as unknown as Date,
+              },
+              unread: 0,
+              fullPhone: user.fullPhone,
+            }),
+          );
         });
         socket.on("getOfflineUser", (data) => {
           const { userId, lastSeen } = data;

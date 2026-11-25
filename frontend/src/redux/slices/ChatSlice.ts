@@ -112,6 +112,13 @@ const ChatSlice = createSlice({
     setActiveContact: (state, action: PayloadAction<ActiveContact[]>) => {
       state.activeContacts = action.payload;
     },
+    addActiveContact: (state, action: PayloadAction<ActiveContact>) => {
+      const newAC = action.payload;
+      const findAC = state.activeContacts.findIndex(
+        (item) => item._id === newAC._id,
+      );
+      if (findAC == -1) state.activeContacts.unshift(newAC);
+    },
     addContact: (state, action: PayloadAction<Contact>) => {
       const contact = action.payload;
       const findContact = state.Contacts.findIndex(
@@ -441,6 +448,7 @@ export const {
   addContact,
   deleteContact,
   setActiveContact,
+  addActiveContact,
   addSenderMessage,
   addReceiverMessage,
   markAllSeen,
