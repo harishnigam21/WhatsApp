@@ -42,7 +42,6 @@ export default function ActiveContact({
   const { search, setSearch, filteredContacts } =
     useContactSearch<AContact>(activeContacts);
   const user = useAppSelector((store) => store.user.userInfo);
-  console.log(filteredContacts);
   return (
     <article className="flex flex-col absolute top-0 left-0 w-full h-full z-10 bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)]">
       {/* heading */}

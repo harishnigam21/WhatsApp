@@ -7,11 +7,12 @@ import { shortTimestamp } from "@/utils/dateFormats";
 import { Check, CheckCheck, ChevronDown, Paperclip } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 import ActiveContactListMenu from "./ActiveContactListMenu";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
+import { validatePhoneNumber } from "@/utils/firebase";
 
-export default function ActiveContactList({
+function ActiveContactList({
   item,
   user,
 }: {
@@ -25,59 +26,79 @@ export default function ActiveContactList({
     (store) => store.chat.selectedContact?._id,
   );
   const swidth = useAppSelector((store) => store.layout.screenSize.width);
+  const isSelected = selectedContactID === item._id;
+
+  const isOwnMessage = item.lastMessage.sender_id === user?._id;
+
+  const hasAttachments = (item.lastMessage.attachments?.length ?? 0) > 0;
+
+  const isUnread = item.unread > 0;
+
+  const handleClick = useCallback(() => {
+    dispatch(setSelectedContactLoading(true));
+    router.push(`/c=${item._id}`);
+  }, [dispatch, router, item._id]);
+
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setOptions((prev) => !prev);
+    },
+    [],
+  );
+
+  const handleOptionsClick = useCallback(
+    (e: React.MouseEvent<SVGSVGElement>) => {
+      e.stopPropagation();
+      setOptions((prev) => !prev);
+    },
+    [],
+  );
 
   return (
     <div
       className="px-2 w-full"
-      onClick={() => {
-        dispatch(setSelectedContactLoading(true));
-        router.push(`/c=${item?._id}`);
-      }}
-      onContextMenu={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        setOptions((prev) => !prev);
-      }}
+      onClick={handleClick}
+      onContextMenu={handleContextMenu}
     >
       <div
-        className={`flex gap-3 px-2.5 py-3 rounded-xl cursor-pointer hover:bg-bgsec active:bg-bgsec ${(options || selectedContactID == item._id) && "bg-bgsec"} group transition-all`}
+        className={`flex gap-3 px-2.5 py-3 rounded-xl cursor-pointer hover:bg-bgsec active:bg-bgsec ${(options || isSelected) && "bg-bgsec"} group transition-all`}
       >
         <div className="min-w-12 min-h-12 max-w-12 max-h-12 flex justify-center items-center rounded-full self-center border overflow-hidden">
           {item?.pic ? (
             <Image
               loading="eager"
               src={item.pic}
-              width={10}
-              height={10}
+              width={48}
+              height={48}
               alt="user pic"
               className="size-full object-cover object-center aspect-square"
             />
           ) : (
             <div className="size-full p-1 flex items-center justify-center uppercase font-bold">
-              {item?.name.slice(0, 2)}
+              {validatePhoneNumber(item.name)
+                ? item.name.slice(-2)
+                : item.name.slice(0, 2)}
             </div>
           )}
         </div>
         <div className="flex flex-col justify-center grow">
-          <p className="break-all line-clamp-1">
-            {item._id == user?._id ? "You" : item.name}
-          </p>
+          <p className="break-all line-clamp-1">{item.name}</p>
           <div className="flex flex-nowrap items-center gap-1">
-            {item.lastMessage.sender_id == user?._id &&
-              !item.lastMessage.deletedFor && (
-                <div>
-                  {item.lastMessage.seen == "unseen" ? (
-                    <Check size={14} className="mt-1 text-txsec" />
-                  ) : item.lastMessage.seen == "seen" ? (
-                    <CheckCheck size={14} className="mt-1 text-blue-500" />
-                  ) : (
-                    <CheckCheck size={14} className="mt-1 text-txsec" />
-                  )}
-                </div>
-              )}
-            <small className="text-txpri/75 break-all line-clamp-1 flex items-center">
-              {item.lastMessage.attachments &&
-              item.lastMessage.attachments.length >= 1 ? (
+            {isOwnMessage && !item.lastMessage.deletedFor && (
+              <div>
+                {item.lastMessage.seen == "unseen" ? (
+                  <Check size={14} className="mt-1 text-txsec" />
+                ) : item.lastMessage.seen == "seen" ? (
+                  <CheckCheck size={14} className="mt-1 text-blue-500" />
+                ) : (
+                  <CheckCheck size={14} className="mt-1 text-txsec" />
+                )}
+              </div>
+            )}
+            <small className="text-txpri/75 break-all line-clamp-1 flex items-center min-w-0">
+              {hasAttachments ? (
                 <div className="mt-1 pr-1 flex flex-nowrap items-center gap-1">
                   <Paperclip size={16} />
                   <span>Attachments</span>
@@ -92,12 +113,12 @@ export default function ActiveContactList({
         </div>
         <div className="flex flex-col gap-1">
           <small
-            className={`${item.unread > 0 ? "text-pri" : "text-txpri/75"} whitespace-nowrap`}
+            className={`${isUnread ? "text-pri" : "text-txpri/75"} whitespace-nowrap`}
           >
             {shortTimestamp(item.lastMessage.createdAt)}
           </small>
           <div className="flex items-center self-end gap-2">
-            {item.unread > 0 && (
+            {isUnread && (
               <div className="size-5 rounded-full flex justify-center items-center p-1 bg-pri font-bold text-black">
                 <small>{item.unread}</small>
               </div>
@@ -109,10 +130,7 @@ export default function ActiveContactList({
               <ChevronDown
                 size={14}
                 className="cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOptions((prev) => !prev);
-                }}
+                onClick={handleOptionsClick}
               />
               {options && <ActiveContactListMenu setOptions={setOptions} />}
             </div>
@@ -122,3 +140,4 @@ export default function ActiveContactList({
     </div>
   );
 }
+export default memo(ActiveContactList);
