@@ -215,6 +215,7 @@ export const getContacts = async (req: AuthRequest, res: Response) => {
 
 export const getActiveContacts = async (req: AuthRequest, res: Response) => {
   try {
+    const userReq = req.user!;
     const userId = new mongoose.Types.ObjectId(req.user!._id);
     const list = await Conversation.find({ participants: userId })
       .populate({
@@ -269,7 +270,13 @@ export const getActiveContacts = async (req: AuthRequest, res: Response) => {
         };
       }
 
-      const user = item.participants[0];
+      const user = item?.participants?.[0] || {
+        fullPhone: `${userReq.phoneCode + userReq.phone}`,
+        lastSeen: userReq.lastSeen,
+        name: `${userReq.phoneCode} ${userReq.phone} (You)`,
+        pic: userReq.pic,
+        unread: 0,
+      };
       const unread = item.unreadCounts[userId.toString()].length;
       return { ...user, unread, lastMessage: updatedLastMessage };
     });
