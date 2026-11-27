@@ -32,7 +32,7 @@ export default function Contact({
   const dispatch = useAppDispatch();
   const router = useRouter();
   const sectionRef = useRef<HTMLDivElement>(null);
-  useUnFocus("contactGoBack", setShowContact, sectionRef);
+  useUnFocus(["contactGoBack", "ContactForm"], setShowContact, sectionRef);
 
   return (
     <article
