@@ -1,5 +1,12 @@
 import express, { NextFunction, Request, Response } from "express";
-import { createContact, importContact } from "../controllers/Contact";
+import {
+  abortContactSyncSession,
+  createContact,
+  generateContactSyncSession,
+  importContact,
+  uploadSyncContact,
+  validateContactSyncSession,
+} from "../controllers/Contact";
 import jwtVerifier from "../middlewares/jwt/jwtVerifier";
 import multer from "multer";
 import path from "node:path";
@@ -52,4 +59,10 @@ const handleVcfUpload = (req: Request, res: Response, next: NextFunction) => {
 const router = express.Router();
 router.route("/new").post(jwtVerifier, createContact);
 router.route("/import").post(jwtVerifier, handleVcfUpload, importContact);
+router.post("/sync-session", jwtVerifier, generateContactSyncSession);
+router.post("/sync-session/:token", validateContactSyncSession);
+router.post("/abort-sync-session/:token", abortContactSyncSession);
+router
+  .route("/import-sync-session/:token")
+  .post(handleVcfUpload, uploadSyncContact);
 export default router;
