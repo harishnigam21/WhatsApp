@@ -6,7 +6,6 @@ import {
   QrCode,
   Smartphone,
   MonitorSmartphone,
-  Dot,
 } from "lucide-react";
 import useApi from "@/hooks/useApi";
 import toast from "react-hot-toast";

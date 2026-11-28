@@ -3,7 +3,7 @@ import {
   setSelectedContactLoading,
 } from "@/redux/slices/ChatSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/Store";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, RefreshCcw, Search } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { IoKeypad } from "react-icons/io5";
@@ -148,6 +148,15 @@ export default function Contact({
               {user?.phoneCode} {user?.phone} (you)
             </p>
             <p className="text-txpri/70 text-sm">Message yourself</p>
+          </div>
+        </div>
+        <div className="flex items-center w-full sticky top-0 bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)] min-h-5">
+          <hr className="border border-borderhl/40 w-full" />
+          <div className="flex flex-nowrap gap-2 items-center absolute right-3 whitespace-nowrap bg-[color-mix(in_srgb,var(--color-bgpri)_100%,var(--color-borderhl)_30%)]">
+            <div className="cursor-pointer" title="Refresh Contacts">
+              <RefreshCcw color="blue" size={14} />
+            </div>
+            <small>{`${Contacts.length} contacts`}</small>
           </div>
         </div>
         {/* other contacts */}

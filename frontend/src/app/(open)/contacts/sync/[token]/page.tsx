@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   LoaderCircle,
   Smartphone,
@@ -79,6 +79,7 @@ export default function ContactSyncPage() {
   const [pickerSupported, setPickerSupported] = useState(false);
   const [vcfFile, setVcfFile] = useState<File | null>(null);
   const [success, setSuccess] = useState(false);
+  const [remaining, setRemaining] = useState(0);
   const ALLOWED_MIME_TYPES = new Set([
     "text/vcard",
     "text/x-vcard",
@@ -296,6 +297,35 @@ export default function ContactSyncPage() {
       !!(navigator as ContactPickerNavigator).contacts?.select,
     );
   }, []);
+  // Countdown timer
+  useEffect(() => {
+    if (!session) return;
+
+    const updateCountdown = () => {
+      const seconds = Math.max(
+        0,
+        Math.ceil((new Date(session.expiresAt).getTime() - Date.now()) / 1000),
+      );
+
+      setRemaining(seconds);
+    };
+
+    updateCountdown();
+
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, [session]);
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+
+    return `${String(minutes).padStart(2, "0")}:${String(
+      remainingSeconds,
+    ).padStart(2, "0")}`;
+  };
+
+  const expired = session !== null && remaining <= 0;
 
   if (status === "loading") {
     return (
@@ -368,13 +398,16 @@ export default function ContactSyncPage() {
                 Your device is ready to import contacts.
               </p>
             </div>
-            {session && (
-              <p className="text-xs text-gray-400">
-                Session expires at:{" "}
-                {session.expiresAt
-                  ? formatTimeToAmPm(new Date(session.expiresAt))
-                  : ""}
-              </p>
+
+            {session && !expired && !importLoading ? (
+              <div className="text-center">
+                <p className="text-sm text-gray-500">QR session expires in</p>
+                <p className="text-2xl font-semibold tabular-nums">
+                  {formatTime(remaining)}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-red-500">Session Expired !</p>
             )}
 
             {pickerSupported ? (
@@ -394,6 +427,7 @@ export default function ContactSyncPage() {
                       Available
                     </p>
                     <button
+                      disabled={expired || importLoading}
                       className="flex flex-nowrap gap-2 cursor-pointer items-center py-3 px-3 rounded-2xl self-center mt-4 w-full justify-self-center justify-center whitespace-nowrap border text-white/50 border-borderhl/40 bg-bgsec/40 hover:bg-bgsec/60 active:bg-bgsec/60 transition-all"
                       onClick={handleSelectContacts}
                     >
@@ -433,6 +467,7 @@ export default function ContactSyncPage() {
                       <span className="ml-2">VCF File</span>
                     </label>
                     <input
+                      disabled={expired || importLoading}
                       type="file"
                       name="vcfUpload"
                       id="vcfUpload"
