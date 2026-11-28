@@ -948,7 +948,7 @@ export const NoChatSelection = () => {
   const { selectedContact, selectedContactLoading } = useAppSelector(
     (store) => store.chat,
   );
-
+  const router = useRouter();
   useEffect(() => {
     setMounted(true);
 
@@ -1139,14 +1139,21 @@ export const NoChatSelection = () => {
         </div>
         <div className="w-87 mt-6 flex gap-1 justify-between">
           {[
-            { name: "Send Document", icon: FileText },
-            { name: "Add Contact", icon: UserPlus },
-            { name: "New Call", icon: Phone },
-            { name: "Ask AI", icon: Bot },
+            { name: "Send Document", icon: FileText, onClick: () => {} },
+            {
+              name: "Add Contact",
+              icon: UserPlus,
+              onClick: () => {
+                router.push("/contact");
+              },
+            },
+            { name: "New Call", icon: Phone, onClick: () => {} },
+            { name: "Ask AI", icon: Bot, onClick: () => {} },
           ].map((item, i) => (
             <div
               key={`noselection/right/icon/${i}`}
               className="flex flex-col justify-center items-center gap-1"
+              onClick={item.onClick}
             >
               <div className="hover:bg-borderhl/75 active:bg-borderhl/75 bg-borderhl/40 rounded-full py-3 px-4 cursor-pointer transition-all">
                 <item.icon className="" size={20} />

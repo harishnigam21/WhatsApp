@@ -40,7 +40,7 @@ export const startMsg = async (req: AuthRequest, res: Response) => {
         $or: [{ sender_id: userId }, { receiver_id: userId }],
       },
       { $addToSet: { starred: userId } },
-      { new: true },
+      { returnDocument: "after" },
     );
     if (!updateMsg) {
       return res
@@ -63,7 +63,7 @@ export const unStartMsg = async (req: AuthRequest, res: Response) => {
         $or: [{ sender_id: userId }, { receiver_id: userId }],
       },
       { $pull: { starred: userId } },
-      { new: true },
+      { returnDocument: "after" },
     );
     if (!updateMsg) {
       return res

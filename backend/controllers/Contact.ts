@@ -36,7 +36,7 @@ export const createContact = async (req: AuthRequest, res: Response) => {
       phone: phoneUp,
       phoneCode: cleanCode,
     })
-      .select("name")
+      .select("name pic")
       .lean();
     const contact = await Contacts.findOneAndUpdate(
       {
@@ -67,7 +67,8 @@ export const createContact = async (req: AuthRequest, res: Response) => {
       data: {
         _id: contactRegistered ? contactRegistered._id : contact._id,
         name: contact.name,
-        pic: contact.pic,
+        pic: contactRegistered ? contactRegistered.pic : contact.pic,
+        fullPhone: contact.fullPhone,
         member: contactRegistered ? true : false,
       },
     });
@@ -174,6 +175,7 @@ export const importContact = async (req: AuthRequest, res: Response) => {
           _id: appUser._id,
           name: contact.name || appUser.name,
           pic: appUser.pic || contact.pic,
+          fullPhone: appUser.fullPhone || contact.fullPhone,
           member: true,
         });
       } else {
@@ -185,6 +187,7 @@ export const importContact = async (req: AuthRequest, res: Response) => {
           _id: contactId,
           name: contact.name || contact.fullPhone,
           pic: contact.pic,
+          fullPhone: contact.fullPhone,
           member: false,
         });
       }
@@ -218,7 +221,7 @@ export const generateContactSyncSession = async (
     if (!frontendURL) {
       throw new Error("FRONTEND_URL is not configured");
     }
-    
+
     // Create session
     const session = await ContactSyncSession.findOneAndUpdate(
       { userId },
@@ -231,7 +234,7 @@ export const generateContactSyncSession = async (
       },
       {
         upsert: true,
-        new: true,
+        returnDocument: "after",
         setDefaultsOnInsert: true,
       },
     );
@@ -526,12 +529,14 @@ export const uploadSyncContact = async (req: Request, res: Response) => {
       name: string;
       pic: string | null;
       member: boolean;
+      fullPhone: string;
     }[] = [];
     const notMembers: {
       _id: string;
       name: string;
       pic: string | null;
       member: boolean;
+      fullPhone: string;
     }[] = [];
 
     for (let i = 0; i < contactsWithCloudPics.length; i++) {
@@ -543,6 +548,7 @@ export const uploadSyncContact = async (req: Request, res: Response) => {
           _id: appUser._id.toString(),
           name: contact.name || appUser.name,
           pic: appUser.pic || contact.pic,
+          fullPhone: appUser.fullPhone || contact.fullPhone,
           member: true,
         });
       } else {
@@ -555,6 +561,7 @@ export const uploadSyncContact = async (req: Request, res: Response) => {
           name: contact.name || contact.fullPhone,
           pic: contact.pic,
           member: false,
+          fullPhone: contact.fullPhone,
         });
       }
     }

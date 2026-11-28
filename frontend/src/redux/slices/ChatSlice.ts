@@ -121,6 +121,16 @@ const ChatSlice = createSlice({
     },
     addContact: (state, action: PayloadAction<Contact>) => {
       const contact = action.payload;
+      const inACList = state.activeContacts.findIndex(
+        (item) => item.fullPhone === contact.fullPhone,
+      );
+      if (inACList !== -1) {
+        state.activeContacts[inACList] = {
+          ...state.activeContacts[inACList],
+          name: contact.name,
+          pic: contact.pic,
+        };
+      }
       const findContact = state.Contacts.findIndex(
         (item) => item._id === contact._id,
       );
