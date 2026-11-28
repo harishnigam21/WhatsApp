@@ -6,7 +6,9 @@ import {
   addActiveContact,
   addReceiverMessage,
   addSenderMessage,
+  bulkAddContact,
   clearUnread,
+  Contact,
   deleteMsgR,
   markAllSeen,
   markSeen,
@@ -16,7 +18,14 @@ import {
   MessageType,
 } from "./slices/ChatSlice";
 import toast from "react-hot-toast";
-import { setLoginStatus } from "./slices/UserSlice";
+import {
+  addQRparticipants,
+  clearQRparticipants,
+  DeviceMetadata,
+  removeQRparticipants,
+  setLoginStatus,
+  setQRSession,
+} from "./slices/UserSlice";
 
 export let socket: Socket | null = null;
 
@@ -122,6 +131,31 @@ export const socketMiddleware: Middleware =
             }),
           );
         });
+        socket.on("QRparticipants", (data) => {
+          const { deviceActive } = data as { deviceActive: DeviceMetadata };
+          if (deviceActive) {
+            store.dispatch(addQRparticipants(deviceActive));
+          }
+        });
+        socket.on("removeQRparticipants", (data) => {
+          const { thumbmark } = data as { thumbmark: string };
+          if (thumbmark) {
+            store.dispatch(removeQRparticipants(thumbmark));
+          }
+        });
+        socket.on(
+          "addSyncContact",
+          (data: { contact: Contact[]; closeSession: boolean }) => {
+            if (data.contact && data.contact.length > 0) {
+              store.dispatch(bulkAddContact(data.contact));
+              toast.success("Contact Imported Successfully");
+            }
+            if (data.closeSession) {
+              store.dispatch(setQRSession(null));
+              store.dispatch(clearQRparticipants());
+            }
+          },
+        );
         socket.on("getOfflineUser", (data) => {
           const { userId, lastSeen } = data;
           if (userId && lastSeen) {

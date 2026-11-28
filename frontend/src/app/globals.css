@@ -30,7 +30,7 @@ body {
 }
 button:disabled {
   opacity: 0.5;
-  cursor: none;
+  cursor:no-drop;
 }
 button {
   white-space: nowrap;
